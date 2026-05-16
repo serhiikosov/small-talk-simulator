@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { Character } from "@/lib/characters";
 import { SAMPLE_SESSION } from "@/lib/summary";
 import InterestBar from "./InterestBar";
@@ -8,28 +10,131 @@ import VoiceRecorder from "./VoiceRecorder";
 import ConversationSummary from "./ConversationSummary";
 
 type Message = { role: "user" | "model"; text: string };
+type Branch = "positive" | "negative";
 
 const MAX_USER_TURNS = 3;
 
+function lindaLine(character: Character, scene: string, fallback: string): string {
+  return character.subtitles?.[scene] ?? fallback;
+}
+
+function buildInitialMessages(
+  character: Character,
+  fromInteractive: boolean,
+  b1: Branch | null,
+  b2: Branch | null,
+): Message[] {
+  const msgs: Message[] = [
+    { role: "model", text: lindaLine(character, "intro", character.firstLine) },
+  ];
+  if (!fromInteractive || !b1) return msgs;
+
+  if (b1 === "positive") {
+    msgs.push({ role: "user", text: character.optionPositive });
+    msgs.push({
+      role: "model",
+      text: lindaLine(character, "positive", character.positiveReply),
+    });
+    if (b2 && character.level2) {
+      msgs.push({
+        role: "model",
+        text: lindaLine(
+          character,
+          character.level2.connectorVideo,
+          "Do you have anything like that?",
+        ),
+      });
+      msgs.push({ role: "user", text: character.level2.options[b2] });
+      msgs.push({
+        role: "model",
+        text: lindaLine(
+          character,
+          character.level2.videos[b2],
+          character.level2.replies[b2],
+        ),
+      });
+    }
+  } else {
+    msgs.push({ role: "user", text: character.optionNegative });
+    msgs.push({
+      role: "model",
+      text: lindaLine(character, "negative", character.negativeReply),
+    });
+    if (character.negativeFollowup) {
+      msgs.push({
+        role: "model",
+        text: lindaLine(
+          character,
+          character.negativeFollowup.video,
+          character.negativeFollowup.reply,
+        ),
+      });
+    }
+  }
+  return msgs;
+}
+
+function deriveInitialInterest(
+  fromInteractive: boolean,
+  b1: Branch | null,
+  b2: Branch | null,
+): number {
+  if (!fromInteractive || !b1) return 50;
+  if (b1 === "negative") return 25;
+  if (!b2) return 65;
+  return b2 === "positive" ? 78 : 38;
+}
+
+function deriveInitialHints(
+  character: Character,
+  fromInteractive: boolean,
+  b1: Branch | null,
+  b2: Branch | null,
+): [string, string] | null {
+  if (!fromInteractive || !b1) return character.initialHints;
+  if (!character.continueHints) return null;
+  const key = b2 ? `${b1}-${b2}` : b1;
+  return character.continueHints[key] ?? null;
+}
+
 export default function TextVoiceChat({ character }: { character: Character }) {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "model", text: character.firstLine },
-  ]);
+  const searchParams = useSearchParams();
+  const fromInteractive = searchParams?.get("from") === "interactive";
+  const b1 = (searchParams?.get("b1") as Branch | null) ?? null;
+  const b2 = (searchParams?.get("b2") as Branch | null) ?? null;
+
+  const initialMessages = useMemo(
+    () => buildInitialMessages(character, fromInteractive, b1, b2),
+    [character, fromInteractive, b1, b2],
+  );
+  const initialInterest = useMemo(
+    () => deriveInitialInterest(fromInteractive, b1, b2),
+    [fromInteractive, b1, b2],
+  );
+  const initialHints = useMemo(
+    () => deriveInitialHints(character, fromInteractive, b1, b2),
+    [character, fromInteractive, b1, b2],
+  );
+
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
-  const [interest, setInterest] = useState(50);
+  const [interest, setInterest] = useState(initialInterest);
   const [turnsUsed, setTurnsUsed] = useState(0);
   const [loading, setLoading] = useState(false);
   const [ended, setEnded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hints, setHints] = useState<[string, string] | null>(
-    character.initialHints,
-  );
+  const [hints, setHints] = useState<[string, string] | null>(initialHints);
+  const [endTransition, setEndTransition] = useState<"chat" | "fading" | "reflecting" | "summary">("chat");
+  const [endReason, setEndReason] = useState<"natural" | "manual">("natural");
 
   const [playingIdx, setPlayingIdx] = useState<number | null>(null);
   const [loadingAudioIdx, setLoadingAudioIdx] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCacheRef = useRef<Map<number, string>>(new Map());
-  const lastAutoPlayed = useRef<number>(-1);
+  // Skip auto-play for history messages that came from the interactive scene.
+  const lastAutoPlayed = useRef<number>(
+    initialMessages.length > 1 ? initialMessages.length - 1 : -1,
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -92,6 +197,26 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     };
   }, []);
 
+  // Smooth transition from chat to summary when the conversation ends.
+  useEffect(() => {
+    if (!ended || endTransition !== "chat") return;
+    const start = endReason === "manual" ? 400 : 1600; // shorter pause for user-initiated finish
+    const t1 = setTimeout(() => setEndTransition("fading"), start);
+    const t2 = setTimeout(() => setEndTransition("reflecting"), start + 800);
+    const t3 = setTimeout(() => setEndTransition("summary"), start + 1800);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [ended, endTransition, endReason]);
+
+  function finishConversation() {
+    if (ended) return;
+    setEndReason("manual");
+    setEnded(true);
+  }
+
   function toggleAudio(idx: number, text: string) {
     if (playingIdx === idx) {
       audioRef.current?.pause();
@@ -145,7 +270,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         setHints(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Помилка");
+      setError(err instanceof Error ? err.message : "Error");
     } finally {
       setLoading(false);
     }
@@ -169,29 +294,105 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     setHints(character.initialHints);
     setPlayingIdx(null);
     setLoadingAudioIdx(null);
+    setEndTransition("chat");
   }
 
-  if (ended) {
+  const inSummaryFlow =
+    endTransition === "reflecting" || endTransition === "summary";
+
+  const headerTitle = inSummaryFlow ? "Summary" : "Conversation";
+
+  const header = (
+    <header className="grid grid-cols-[1fr_auto_1fr] items-center px-5 pt-3 pb-2">
+      <div className="justify-self-start">
+        <Link
+          href={`/character/${character.id}?format=text-voice`}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg text-white/90 transition hover:bg-white/15 active:scale-95"
+          aria-label="Back"
+        >
+          ←
+        </Link>
+      </div>
+      <div className="text-center">
+        <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">
+          {headerTitle}
+        </p>
+        <p className="text-sm font-medium text-white">
+          {character.avatar} {character.name}, {character.age}
+        </p>
+      </div>
+      <div className="justify-self-end">
+        {endTransition === "chat" ? (
+          <button
+            onClick={finishConversation}
+            className="inline-flex h-9 items-center rounded-full border border-rose-400/40 bg-rose-500/10 px-3 text-[12px] font-medium text-rose-200 transition hover:bg-rose-500/20 hover:text-rose-100 active:scale-95"
+            aria-label="Finish conversation"
+            title="Finish conversation"
+          >
+            Finish
+          </button>
+        ) : (
+          <span className="block h-9 w-9" />
+        )}
+      </div>
+    </header>
+  );
+
+  if (endTransition === "summary") {
     return (
-      <ConversationSummary
-        session={SAMPLE_SESSION}
-        characterId={character.id}
-        onRestart={restartConversation}
-      />
+      <div className="flex min-h-0 flex-1 flex-col">
+        {header}
+        <div className="min-h-0 flex-1 animate-fade-in-slow">
+          <ConversationSummary
+            session={SAMPLE_SESSION}
+            characterId={character.id}
+            onRestart={restartConversation}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (endTransition === "reflecting") {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        {header}
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 animate-fade-in">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/5">
+              <svg className="h-5 w-5 animate-spin text-coral" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity=".2" strokeWidth="3" />
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            </span>
+            <p className="font-serif text-[18px] italic leading-relaxed text-slate-200">
+              Looking back on this one…
+            </p>
+            <p className="text-[13px] text-slate-400">
+              Pulling out the moments worth remembering.
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div
+      className={`flex min-h-0 flex-1 flex-col transition-opacity duration-700 ${
+        endTransition === "fading" ? "opacity-0" : "opacity-100"
+      }`}
+    >
+      {header}
       <InterestBar value={interest} />
 
       <div className="flex items-center justify-between px-5 pb-3 text-[12px] text-slate-400">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          {character.name} онлайн
+          {character.name} online
         </span>
         <span className="rounded-full bg-white/5 px-2.5 py-1">
-          реплік: <span className="font-mono text-slate-200">{Math.max(0, turnsLeft)}</span>/{MAX_USER_TURNS}
+          replies left: <span className="font-mono text-slate-200">{Math.max(0, turnsLeft)}</span>/{MAX_USER_TURNS}
         </span>
       </div>
 
@@ -246,7 +447,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
                         <path d="M3 9v6h4l5 5V4L7 9H3Zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z" />
                       </svg>
                     )}
-                    {isPlaying ? "Грає" : isLoadingAudio ? "..." : "Озвучити"}
+                    {isPlaying ? "Playing" : isLoadingAudio ? "..." : "Play voice"}
                   </button>
                 )}
               </div>
@@ -281,7 +482,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
           className="space-y-2 px-4 pb-3 animate-fade-in"
         >
           <p className="pl-1 text-[11px] uppercase tracking-widest text-slate-500">
-            💡 Підказки
+            💡 Suggestions
           </p>
           {hints.map((hint, i) => (
             <button
@@ -313,7 +514,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
               }
             }}
             disabled={loading}
-            placeholder="Напиши або скажи..."
+            placeholder="Type or speak…"
             rows={1}
             className="block max-h-32 w-full resize-none bg-transparent px-4 py-4 text-[16px] text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
           />
@@ -323,7 +524,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
             type="submit"
             disabled={loading}
             className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)] transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
-            title="Надіслати"
+            title="Send"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M3 11.5 21 3l-8.5 18-2-7.5L3 11.5Z" />

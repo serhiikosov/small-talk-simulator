@@ -36,10 +36,10 @@ export default function VoiceRecorder({ disabled, onTranscribed }: Props) {
           if (data.text && data.text.trim()) {
             onTranscribed(data.text.trim());
           } else {
-            setError("Не вдалось розпізнати");
+            setError("Couldn't recognize that");
           }
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Помилка");
+          setError(err instanceof Error ? err.message : "Error");
         } finally {
           setProcessing(false);
         }
@@ -49,7 +49,7 @@ export default function VoiceRecorder({ disabled, onTranscribed }: Props) {
       setRecording(true);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Доступ до мікрофону",
+        err instanceof Error ? err.message : "Microphone access denied",
       );
     }
   }
@@ -70,7 +70,7 @@ export default function VoiceRecorder({ disabled, onTranscribed }: Props) {
             ? "bg-rose-500 text-white shadow-[0_0_0_5px_rgba(244,63,94,0.25)]"
             : "bg-white/10 text-slate-200 hover:bg-white/15"
         } disabled:cursor-not-allowed disabled:opacity-40`}
-        title={recording ? "Зупинити" : "Записати голосом"}
+        title={recording ? "Stop" : "Record voice"}
       >
         {processing ? (
           <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">

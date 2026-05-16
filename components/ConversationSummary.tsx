@@ -38,25 +38,51 @@ export default function ConversationSummary({
       ref={scrollRootRef}
       className="min-h-0 flex-1 overflow-y-auto scrollbar-thin"
     >
-      <div className="space-y-8 px-5 pb-8 pt-2">
-        <HeroMoment hero={session.analysis.heroMoment} />
-        <InterestCurve
-          transcript={session.transcript}
-          summary={session.analysis.curveSummary}
-        />
-        <NoticeLists
-          whatWorked={session.analysis.whatWorked}
-          worthNoticing={session.analysis.worthNoticing}
-          onSeeMoment={seeMoment}
-        />
-        <FullBreakdown
-          transcript={session.transcript}
-          annotations={session.analysis.transcriptAnnotations}
-          open={transcriptOpen}
-          setOpen={setTranscriptOpen}
-          highlightIndex={highlightIndex}
-        />
-        <Footer characterId={characterId} onRestart={onRestart} />
+      <div className="space-y-8 px-5 pb-8 pt-4">
+        <div
+          className="space-y-2 text-center animate-block-in"
+          style={{ animationDelay: "0ms" }}
+        >
+          <p className="text-[11px] uppercase tracking-[0.32em] text-slate-500">
+            Conversation complete
+          </p>
+          <p className="font-serif text-[17px] italic leading-relaxed text-slate-200">
+            Linda just left the room.<br />Here's what stayed with her.
+          </p>
+        </div>
+
+        <div className="animate-block-in" style={{ animationDelay: "120ms" }}>
+          <HeroMoment hero={session.analysis.heroMoment} />
+        </div>
+
+        <div className="animate-block-in" style={{ animationDelay: "260ms" }}>
+          <InterestCurve
+            transcript={session.transcript}
+            summary={session.analysis.curveSummary}
+          />
+        </div>
+
+        <div className="animate-block-in" style={{ animationDelay: "400ms" }}>
+          <NoticeLists
+            whatWorked={session.analysis.whatWorked}
+            worthNoticing={session.analysis.worthNoticing}
+            onSeeMoment={seeMoment}
+          />
+        </div>
+
+        <div className="animate-block-in" style={{ animationDelay: "540ms" }}>
+          <FullBreakdown
+            transcript={session.transcript}
+            annotations={session.analysis.transcriptAnnotations}
+            open={transcriptOpen}
+            setOpen={setTranscriptOpen}
+            highlightIndex={highlightIndex}
+          />
+        </div>
+
+        <div className="animate-block-in" style={{ animationDelay: "680ms" }}>
+          <Footer characterId={characterId} onRestart={onRestart} />
+        </div>
       </div>
     </div>
   );
@@ -67,16 +93,16 @@ export default function ConversationSummary({
 function HeroMoment({ hero }: { hero: Session["analysis"]["heroMoment"] }) {
   return (
     <section>
-      <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-slate-400">
-        ⭐ Your moment today
+      <p className="mb-3 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-400">
+        <span className="text-coral">✦</span> The moment that mattered
       </p>
       <div className="overflow-hidden rounded-3xl border border-coral/20 bg-gradient-to-br from-coral/10 via-white/[0.03] to-white/[0.02] p-6 shadow-[0_10px_40px_-15px_rgba(224,120,86,0.35)]">
-        <p className="font-serif text-[20px] leading-[1.45] text-white">
+        <p className="font-serif text-[21px] leading-[1.5] text-white">
           <span className="text-coral">“</span>
           {hero.quote}
           <span className="text-coral">”</span>
         </p>
-        <div className="my-4 h-px w-12 bg-coral/40" />
+        <div className="my-5 h-px w-12 bg-coral/40" />
         <p className="text-[14px] leading-relaxed text-slate-300">
           {hero.lesson}
         </p>
@@ -158,7 +184,7 @@ function InterestCurve({
   return (
     <section ref={containerRef}>
       <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-slate-400">
-        Interest curve
+        How Linda felt, moment by moment
       </p>
       <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-4">
         <div className="relative">
@@ -259,7 +285,7 @@ function InterestCurve({
           <span>end</span>
         </div>
 
-        <p className="mt-4 text-[13px] leading-relaxed text-slate-300">
+        <p className="mt-4 font-serif text-[14px] italic leading-relaxed text-slate-300">
           {summary}
         </p>
       </div>
@@ -321,13 +347,13 @@ function NoticeLists({
   return (
     <section className="space-y-6">
       <ListGroup
-        title="What you did well"
+        title="What landed"
         items={whatWorked}
         tone="coral"
         onSeeMoment={onSeeMoment}
       />
       <ListGroup
-        title="Worth noticing"
+        title="Worth a second look"
         items={worthNoticing}
         tone="muted"
         onSeeMoment={onSeeMoment}
@@ -383,7 +409,7 @@ function ListGroup({
                   onClick={() => onSeeMoment(item.transcriptIndex)}
                   className={`text-[12px] font-medium ${linkColor} transition`}
                 >
-                  → see the moment
+                  → revisit this moment
                 </button>
               </div>
             </div>
@@ -417,10 +443,10 @@ function FullBreakdown({
       >
         <div>
           <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">
-            Full breakdown
+            Replay the whole thing
           </p>
           <p className="mt-1 text-[14px] text-slate-200">
-            Read the conversation with coach notes
+            Every line, with coach notes along the way
           </p>
         </div>
         <span
@@ -461,7 +487,7 @@ function FullBreakdown({
                     isUser ? "text-accent-400" : "text-slate-400"
                   }`}
                 >
-                  {isUser ? "you" : "Linda"}
+                  {isUser ? "You" : "Linda"}
                 </p>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-slate-100">
                   {m.text}

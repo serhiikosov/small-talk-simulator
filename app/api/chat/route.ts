@@ -28,19 +28,19 @@ export async function POST(req: NextRequest) {
 
   const systemInstruction = `${character.systemPrompt}
 
-Контекст small talk:
-- Локація: ${character.location}
-- Ситуація: ${character.situation}
-- Поточний рівень твого інтересу до співрозмовника (0-100): ${body.currentInterest}
-- У користувача залишилось реплік: ${body.turnsLeft}
+Small talk context:
+- Setting: ${character.location}
+- Scene: ${character.situation}
+- Your current interest level toward the other person (0-100): ${body.currentInterest}
+- Replies the user has left: ${body.turnsLeft}
 
-Твоя задача в кожному відповіді:
-1. "reply" — твоя наступна репліка (1-3 речення, природно, без зайвої театральності).
-2. "interestDelta" — на скільки змінився інтерес від останнього повідомлення користувача (-25..+20). Зростає при щирому інтересі, гуморі, релевантних запитаннях. Падає при нав'язливості, недоречних особистих запитаннях, повній зміні теми, грубості.
-3. "endConversation" — true якщо після цієї репліки треба ввічливо завершити розмову (інтерес впав ≤ 25 або користувач явно переходить межу). При завершенні твоя репліка має бути ввічливою формою прощання.
-4. "hints" — масив з ЕКЗАКТНО 2 короткими пропозиціями (тією самою мовою, що й reply) — це що користувач МІГ БИ сказати у відповідь на твою репліку. Перша — щира, тепла, конструктивна, що продовжує розмову. Друга — більш ризикована, нав'язлива або провокативна (потенційно може знизити інтерес). Кожна 5-14 слів, у стилі живої розмови, як реальний варіант відповіді.
+For every reply you produce:
+1. "reply" — your next line (1-3 sentences, natural, no theatrics).
+2. "interestDelta" — how much your interest moved from the user's last message (-25..+20). Goes up with genuine curiosity, humor, relevant questions. Goes down with intrusiveness, awkward personal questions, total topic shifts, rudeness.
+3. "endConversation" — true if you should politely wrap up after this line (interest dropped to ≤ 25, or the user crossed a line). When ending, your reply should be a polite goodbye in character.
+4. "hints" — an array of EXACTLY 2 short suggestions (in the same language as your reply) that the user could say next. The first one is warm, sincere, keeps the conversation going. The second one is riskier, intrusive, or provocative (could lower interest). Each 5-14 words, natural conversation style.
 
-Відповідай ЛИШЕ валідним JSON.`;
+Respond with valid JSON ONLY.`;
 
   const contents = [
     {

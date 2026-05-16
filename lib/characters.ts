@@ -26,6 +26,13 @@ export type Character = {
     video: string;
     reply: string;
   };
+  // Accurate per-scene subtitles. Keyed by scene id returned from
+  // phaseToScene() (e.g. "intro", "positive", "positive-followup", etc.).
+  subtitles?: Record<string, string>;
+  // Hint pairs shown when the user lands in chat after the interactive
+  // scenario. Keyed by branch state: "positive", "negative",
+  // "positive-positive", "positive-negative".
+  continueHints?: Record<string, [string, string]>;
 };
 
 export const characters: Character[] = [
@@ -34,7 +41,7 @@ export const characters: Character[] = [
     name: "Linda",
     age: 27,
     avatar: "🍷",
-    shortDescription: "Дівчина твого сина — перша зустріч",
+    shortDescription: "Your son's girlfriend — first meeting",
     location:
       "Cozy American suburban living room — warm evening light from a side lamp, beige sofa with throw pillows, family photos and bookshelf in the background.",
     situation:
@@ -86,13 +93,42 @@ Rules:
       reply:
         "You know what — let me go check if David needs a hand in the kitchen. Excuse me.",
     },
+    subtitles: {
+      intro:
+        "You have such a beautiful home. David mentioned you restored that hutch over there.",
+      positive:
+        "I'm so glad you asked about pottery. It started as a hobby and now I even supply the café with mugs. It feels incredible.",
+      negative: "Oh, um, we're doing really well. Everything's good.",
+      "positive-followup":
+        "I started during the pandemic. It's been so grounding for me. Do you have anything like that?",
+      "positive-l2-pos":
+        "Oh, that's so cool. I'd love to see something you made sometime.",
+      "positive-l2-neg":
+        "Almost a year. You know, I should go see if David needs a hand. Excuse me.",
+      "negative-followup":
+        "You know what? Let me go check if David needs a hand. Excuse me.",
+    },
+    continueHints: {
+      "positive-positive": [
+        "I'll bring some of my pieces next time. How did you two actually meet?",
+        "Sounds great. Just curious — is David serious about you, or is this still casual?",
+      ],
+      "positive-negative": [
+        "Sorry — I didn't mean to put you on the spot. What made you fall for David?",
+        "I just want to know if you're in this for the long haul.",
+      ],
+      negative: [
+        "Sorry, that came out wrong. Let me start over — tell me about your pottery.",
+        "Okay but seriously — how do you two split rent?",
+      ],
+    },
   },
   {
     id: "mark",
     name: "Mark",
     age: 52,
     avatar: "☕",
-    shortDescription: "Новий senior у твоїй команді",
+    shortDescription: "New senior on your team",
     location:
       "Modern American corporate office kitchen — soft morning light from a window, espresso machine and white cabinets in the background, small coffee mug shelf.",
     situation:
@@ -100,15 +136,15 @@ Rules:
     fullDescription:
       "Mark, 52. American, salt-and-pepper hair neatly cut, trimmed gray beard, warm blue-gray eyes with slight smile lines. Navy button-down over a white undershirt, sleeves rolled up once. Confident, approachable posture. Senior backend engineer with deep experience.",
     firstLine:
-      "Hey, morning. We keep crossing paths in here, huh — I'm Mark, just joined the team a couple weeks ago.",
+      "Morning. You doing the coffee run, too? I'm still figuring this machine out — I'm pretty sure I made tea by accident on Tuesday.",
     optionPositive:
-      "Hey Mark, welcome aboard! How's the first two weeks been treating you?",
+      "Ha, takes everyone a while. Welcome aboard — how's the transition been so far?",
     optionNegative:
-      "Yeah, hey. They tell you about all the legacy code yet, or you're still in the honeymoon phase?",
+      "Just hit the espresso button. Pretty self-explanatory, mate.",
     positiveReply:
-      "Honestly, it's been a whirlwind — drinking from the firehose, you know how it is. Team's been great though. What do you work on?",
+      "Honestly, it's a lot. 20 years at one company and now I'm relearning everything. But the team's been great. Worked with Linda on the Henderson proposal last week — she really knows her stuff.",
     negativeReply:
-      "Ha. They hinted. I'm trying to stay optimistic for at least another week. Anyway — good to put a name to the face.",
+      "Right. Thanks.",
     systemPrompt: `You are Mark, a 52-year-old American senior backend engineer who joined this team two weeks ago. You moved over from another company. You're warm but direct, with a dry sense of humor and a lot of experience. You appreciate substantive conversations and genuine curiosity. You speak naturally in English.
 
 Rules:
@@ -120,9 +156,26 @@ Rules:
     gradient: "from-sky-500/40 via-indigo-500/30 to-violet-500/40",
     voice: "Charon",
     initialHints: [
-      "Welcome aboard! How's the first two weeks been treating you?",
-      "Mark, yeah. So where were you before this place?",
+      "Ha, takes everyone a while. How's the transition been so far?",
+      "Just hit the espresso button. It's pretty straightforward.",
     ],
+    subtitles: {
+      intro:
+        "Morning. You doing the coffee run, too? I'm still figuring this machine out, but I'm pretty sure I made tea by accident on Tuesday.",
+      positive:
+        "Honestly, it's a lot. 20 years at one company and now I'm relearning everything. But the team's been great. Worked with Linda on the Henderson proposal last week — she really knows her stuff.",
+      negative: "Right, thanks.",
+    },
+    continueHints: {
+      positive: [
+        "20 years is a lot. What made you finally jump?",
+        "Honestly, what's the comp like here vs your old place?",
+      ],
+      negative: [
+        "Sorry, that came out wrong. Welcome aboard — what team are you on?",
+        "Suit yourself. Just trying to be friendly.",
+      ],
+    },
   },
 ];
 

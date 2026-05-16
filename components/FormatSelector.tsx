@@ -8,8 +8,8 @@ type Props = {
 };
 
 const FORMATS: { key: "interactive" | "text-voice"; label: string; icon: string }[] = [
-  { key: "interactive", label: "Відео", icon: "🎬" },
-  { key: "text-voice", label: "Текст / Голос", icon: "💬" },
+  { key: "interactive", label: "Video", icon: "🎬" },
+  { key: "text-voice", label: "Text / Voice", icon: "💬" },
 ];
 
 export default function FormatSelector({ characterId, selected }: Props) {

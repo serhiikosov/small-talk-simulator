@@ -23,12 +23,12 @@ export default async function CharacterPage({ params, searchParams }: Props) {
         <Link
           href="/"
           className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg text-white/90 transition hover:bg-white/15 active:scale-95"
-          aria-label="Назад"
+          aria-label="Back"
         >
           ←
         </Link>
         <span className="text-[11px] uppercase tracking-[0.28em] text-slate-400">
-          Профіль
+          Profile
         </span>
         <span className="w-9" />
       </div>
@@ -50,12 +50,8 @@ export default async function CharacterPage({ params, searchParams }: Props) {
           </div>
         </section>
 
-        <section className="mt-5 space-y-4">
-          <InfoBlock label="Локація" icon="📍">{character.location}</InfoBlock>
-          <InfoBlock label="Ситуація" icon="🎬">{character.situation}</InfoBlock>
-          <InfoBlock label="Про персонажа" icon="👤">
-            {character.fullDescription}
-          </InfoBlock>
+        <section className="mt-5">
+          <InfoBlock label="The scene" icon="🎬">{character.situation}</InfoBlock>
         </section>
       </div>
 

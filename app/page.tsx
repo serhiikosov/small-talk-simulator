@@ -9,10 +9,10 @@ export default function HomePage() {
           Small Talk Simulator
         </p>
         <h1 className="mt-1.5 text-[26px] font-semibold leading-tight">
-          Обери, з ким сьогодні<br />потренуєш розмову
+          Pick someone to<br />practice with today
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Реалістичні сценарії. Відео-сценарій з вибором або текст / голос з аналізом інтересу.
+          Realistic scenarios. Branching video or a text / voice chat with interest tracking.
         </p>
       </header>
 
@@ -32,7 +32,7 @@ export default function HomePage() {
               <div className="flex items-start justify-between">
                 <span className="text-5xl drop-shadow-lg">{c.avatar}</span>
                 <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white backdrop-blur">
-                  {c.age} р.
+                  {c.age} yrs
                 </span>
               </div>
               <div className="mt-6">
@@ -43,7 +43,7 @@ export default function HomePage() {
                 {c.location}
               </p>
               <div className="mt-4 flex items-center justify-between text-sm font-medium">
-                <span className="text-white/90">Почати знайомство</span>
+                <span className="text-white/90">Start the conversation</span>
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur transition group-hover:bg-white/30 group-hover:translate-x-0.5">
                   →
                 </span>

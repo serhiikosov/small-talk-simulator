@@ -108,6 +108,10 @@ export default function InteractiveScene({ character }: { character: Character }
 
   const displayScene = phaseToScene(displayPhase, character);
   const displayText = phaseToFallbackText(displayPhase, character);
+  const subtitleText =
+    displayScene && character.subtitles
+      ? character.subtitles[displayScene] ?? displayText
+      : displayText;
 
   // Auto-play when entering a new video phase. Try with sound first, fall back to muted.
   useEffect(() => {
@@ -271,7 +275,7 @@ export default function InteractiveScene({ character }: { character: Character }
               </p>
             </div>
             <p className="absolute inset-x-0 bottom-4 text-center text-[10px] uppercase tracking-widest text-white/40">
-              placeholder · додай {displayScene}.mp4
+              placeholder · add {displayScene}.mp4
             </p>
           </div>
         )}
@@ -284,8 +288,8 @@ export default function InteractiveScene({ character }: { character: Character }
             className={`absolute top-3 right-14 z-20 inline-flex h-9 items-center gap-1 rounded-full bg-black/60 px-2.5 text-[11px] font-bold text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
               captionsOn ? "" : "opacity-50"
             }`}
-            aria-label={captionsOn ? "Сховати субтитри" : "Показати субтитри"}
-            title={captionsOn ? "Сховати субтитри" : "Показати субтитри"}
+            aria-label={captionsOn ? "Hide captions" : "Show captions"}
+            title={captionsOn ? "Hide captions" : "Show captions"}
           >
             CC
           </button>
@@ -297,7 +301,7 @@ export default function InteractiveScene({ character }: { character: Character }
             className={`absolute top-3 right-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
               needsTap ? "ring-2 ring-white/70 animate-pulse" : ""
             }`}
-            aria-label={muted ? "Увімкнути звук" : "Вимкнути звук"}
+            aria-label={muted ? "Unmute" : "Mute"}
           >
             {muted ? (
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -322,16 +326,16 @@ export default function InteractiveScene({ character }: { character: Character }
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 9v6h4l5 5V4L7 9H3Zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z" />
               </svg>
-              Тапни щоб увімкнути звук
+              Tap to enable sound
             </span>
           </button>
         )}
 
         {/* Subtitles */}
-        {captionsOn && !videoFailed && isVideoPhase(phase) && displayText && (
+        {captionsOn && !videoFailed && isVideoPhase(phase) && subtitleText && (
           <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4 animate-fade-in">
             <p className="max-w-[88%] rounded-lg bg-black/70 px-3 py-1.5 text-center text-[14px] leading-snug text-white backdrop-blur-sm">
-              {displayText}
+              {subtitleText}
             </p>
           </div>
         )}
@@ -341,10 +345,10 @@ export default function InteractiveScene({ character }: { character: Character }
           <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/95 via-black/75 to-transparent p-4 pt-20 animate-slide-up">
             <p className="mb-1 px-1 text-[11px] uppercase tracking-widest text-white/70">
               {pendingChoice
-                ? "Обрано..."
+                ? "Selected…"
                 : choiceContext === 2
-                ? "А далі?"
-                : "Як відповіси?"}
+                ? "And then?"
+                : "How will you respond?"}
             </p>
             {(pendingChoice === null || pendingChoice === "positive") && (
               <ChoiceButton
@@ -369,35 +373,58 @@ export default function InteractiveScene({ character }: { character: Character }
 
         {/* End-of-branch overlay */}
         {phase === "end" && (
-          <div className="absolute inset-0 z-30 flex items-end bg-gradient-to-t from-black/95 via-black/70 to-black/40 p-4 backdrop-blur-[2px] animate-fade-in">
-            <div className="w-full rounded-2xl border border-white/10 bg-slate-900/95 p-4 text-center">
+          <div className="absolute inset-0 z-30 flex items-end overflow-y-auto bg-gradient-to-t from-black/95 via-black/75 to-black/40 p-4 backdrop-blur-[2px] animate-fade-in">
+            <div className="w-full rounded-2xl border border-white/10 bg-slate-900/95 p-4">
               <p className="text-[10px] uppercase tracking-widest text-slate-400">
-                Сценарій завершено
+                Scene complete
               </p>
               <p className="mt-2 text-[14px] leading-relaxed text-slate-200">
                 {endMessage(lastChoice)}
               </p>
-              <div className="mt-4 flex gap-2">
+              <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+                Keep going in chat where you pick the words — or wrap up and see what stood out.
+              </p>
+
+              <div className="mt-4 space-y-2">
+                <Link
+                  href={buildContinueChatHref(character.id, lastChoice)}
+                  className="flex items-center justify-center gap-2 rounded-full bg-accent-500 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_10px_30px_-12px_rgba(139,92,246,0.65)] transition active:scale-[0.98] hover:bg-accent-400"
+                >
+                  Continue in chat
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                </Link>
+                <Link
+                  href={`/simulation/${character.id}/summary`}
+                  className="flex items-center justify-center gap-2 rounded-full border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-[14px] font-medium text-rose-300 transition active:scale-[0.98] hover:bg-rose-500/20 hover:text-rose-200"
+                >
+                  Finish — see summary
+                </Link>
+              </div>
+
+              <div className="mt-3 flex gap-2">
                 {lastChoice && (
                   <button
                     onClick={tryOther}
-                    className="flex-1 rounded-full bg-accent-500 px-3 py-2.5 text-[13px] font-semibold text-white transition hover:bg-accent-400 active:scale-[0.98]"
+                    className="flex-1 rounded-full border border-white/10 px-3 py-2 text-[12px] font-medium text-slate-300 transition hover:bg-white/5 hover:text-white active:scale-[0.98]"
                   >
-                    {lastChoice.level === 2 ? "Інший вибір тут" : "Інша гілка"}
+                    {lastChoice.level === 2 ? "Other reply" : "Other path"}
                   </button>
                 )}
                 <button
                   onClick={restart}
-                  className="flex-1 rounded-full border border-white/15 px-3 py-2.5 text-[13px] font-medium text-white transition hover:bg-white/10 active:scale-[0.98]"
+                  className="flex-1 rounded-full border border-white/10 px-3 py-2 text-[12px] font-medium text-slate-300 transition hover:bg-white/5 hover:text-white active:scale-[0.98]"
                 >
-                  З початку
+                  Start over
                 </button>
               </div>
+
               <Link
                 href="/"
-                className="mt-2 block rounded-full px-3 py-2 text-[12px] font-medium text-slate-400 transition hover:text-slate-200"
+                className="mt-2 block rounded-full px-3 py-2 text-center text-[12px] font-medium text-slate-500 transition hover:text-slate-300"
               >
-                ← До персонажів
+                ← Back to characters
               </Link>
             </div>
           </div>
@@ -407,16 +434,32 @@ export default function InteractiveScene({ character }: { character: Character }
   );
 }
 
+function buildContinueChatHref(
+  characterId: string,
+  last: LastChoice | null,
+): string {
+  const params = new URLSearchParams({ from: "interactive" });
+  if (last) {
+    if (last.level === 1) {
+      params.set("b1", last.branch);
+    } else {
+      params.set("b1", "positive"); // level-2 only branches off the positive path
+      params.set("b2", last.branch);
+    }
+  }
+  return `/simulation/${characterId}/text-voice?${params.toString()}`;
+}
+
 function endMessage(last: LastChoice | null): string {
-  if (!last) return "Готовий спробувати ще раз?";
+  if (!last) return "Ready to try again?";
   if (last.level === 1) {
     return last.branch === "positive"
-      ? "Тепла гілка пройдена. Цікаво, як піде інша?"
-      : "Ризикована гілка пройдена. А якщо обрати інакше?";
+      ? "Warm path done. Curious how the other one plays out?"
+      : "Risky path done. What if you'd opened differently?";
   }
   return last.branch === "positive"
-    ? "Розмова склалась добре. Спробуй інший вибір на другому кроці?"
-    : "Розмова стала прохолоднішою. Можна було м'якше — спробуй інший варіант.";
+    ? "That landed well. Curious how the other reply would have gone?"
+    : "That cooled things off. A softer reply might have kept it going.";
 }
 
 function ChoiceButton({
