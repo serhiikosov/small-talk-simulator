@@ -11,7 +11,7 @@ export default async function InteractivePage({ params }: Props) {
   if (!character) notFound();
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between px-5 pt-3 pb-2">
         <Link
           href={`/character/${id}?format=interactive`}
