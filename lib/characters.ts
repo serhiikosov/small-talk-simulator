@@ -3,6 +3,7 @@ export type Character = {
   name: string;
   age: number;
   avatar: string;
+  portrait: string;
   shortDescription: string;
   location: string;
   situation: string;
@@ -41,6 +42,7 @@ export const characters: Character[] = [
     name: "Linda",
     age: 27,
     avatar: "🍷",
+    portrait: "/images/linda.jpg",
     shortDescription: "Your son's girlfriend — first meeting",
     location:
       "Cozy American suburban living room — warm evening light from a side lamp, beige sofa with throw pillows, family photos and bookshelf in the background.",
@@ -128,6 +130,7 @@ Rules:
     name: "Mark",
     age: 52,
     avatar: "☕",
+    portrait: "/images/mark.jpg",
     shortDescription: "New senior on your team",
     location:
       "Modern American corporate office kitchen — soft morning light from a window, espresso machine and white cabinets in the background, small coffee mug shelf.",

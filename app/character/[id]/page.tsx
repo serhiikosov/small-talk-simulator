@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCharacter } from "@/lib/characters";
@@ -19,42 +20,75 @@ export default async function CharacterPage({ params, searchParams }: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-5 pt-3 pb-2">
+      {/* Translucent floating back button — sits on top of the portrait */}
+      <div className="absolute left-4 top-12 z-20 sm:top-14">
         <Link
           href="/"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg text-white/90 transition hover:bg-white/15 active:scale-95"
           aria-label="Back"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-lg text-white backdrop-blur transition hover:bg-black/60 active:scale-95"
         >
           ←
         </Link>
-        <span className="text-[11px] uppercase tracking-[0.28em] text-slate-400">
-          Profile
-        </span>
-        <span className="w-9" />
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-5 pb-32">
-        <FormatSelector characterId={character.id} selected={selectedFormat} />
+      <div className="flex-1 overflow-y-auto scrollbar-thin pb-32">
+        {/* Hero portrait with cinematic name overlay */}
+        <div className="relative">
+          <div className="relative aspect-[4/5] w-full overflow-hidden">
+            <Image
+              src={character.portrait}
+              alt={character.name}
+              fill
+              priority
+              sizes="(min-width: 640px) 440px, 100vw"
+              className="object-cover"
+            />
+            {/* Top fade so the back button stays readable */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 via-black/20 to-transparent" />
+            {/* Bottom fade for the name caption */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/95 via-black/55 to-transparent" />
+          </div>
 
-        <section
-          className={`mt-5 overflow-hidden rounded-3xl bg-gradient-to-br ${character.gradient} p-6`}
-        >
-          <div className="flex items-center gap-4">
-            <span className="text-6xl drop-shadow-lg">{character.avatar}</span>
-            <div>
-              <h1 className="text-2xl font-semibold leading-tight">
-                {character.name}, {character.age}
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-5">
+            <p className="text-[11px] uppercase tracking-[0.32em] text-white/70">
+              {character.shortDescription}
+            </p>
+            <div className="mt-1 flex items-baseline gap-3">
+              <h1 className="font-serif text-[44px] font-medium leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
+                {character.name}
               </h1>
-              <p className="text-sm text-white/85">{character.shortDescription}</p>
+              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur">
+                {character.age} yrs
+              </span>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section className="mt-5">
-          <InfoBlock label="The scene" icon="🎬">{character.situation}</InfoBlock>
-        </section>
+        <div className="px-5 pt-6">
+          {/* Format toggle — secondary choice */}
+          <FormatSelector characterId={character.id} selected={selectedFormat} />
+
+          {/* The scene — primary context */}
+          <section className="mt-6">
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] text-accent-400">
+              <span>🎬</span> The scene
+            </p>
+            <p className="font-serif text-[16px] leading-[1.55] text-slate-100">
+              {character.situation}
+            </p>
+          </section>
+
+          <div className="mt-6 flex items-center gap-3">
+            <span className="inline-flex h-px flex-1 bg-white/10" />
+            <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+              ready when you are
+            </span>
+            <span className="inline-flex h-px flex-1 bg-white/10" />
+          </div>
+        </div>
       </div>
 
+      {/* Sticky Start CTA */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent px-5 pb-7 pt-10 sm:pb-9">
         <Link
           href={`/simulation/${character.id}/${selectedFormat}`}
@@ -66,25 +100,6 @@ export default async function CharacterPage({ params, searchParams }: Props) {
           </svg>
         </Link>
       </div>
-    </div>
-  );
-}
-
-function InfoBlock({
-  label,
-  icon,
-  children,
-}: {
-  label: string;
-  icon: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-      <h2 className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-accent-400">
-        <span>{icon}</span> {label}
-      </h2>
-      <p className="mt-1.5 text-[14px] leading-relaxed text-slate-200">{children}</p>
     </div>
   );
 }
