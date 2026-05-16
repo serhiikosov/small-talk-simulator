@@ -13,6 +13,11 @@ const config: Config = {
           500: "#8b5cf6",
           600: "#7c3aed",
         },
+        coral: "#E07856",
+        muted: "#6B7280",
+      },
+      fontFamily: {
+        serif: ["var(--font-lora)", "Georgia", "ui-serif", "serif"],
       },
       animation: {
         "fade-in": "fadeIn 0.4s ease-out",

@@ -16,6 +16,16 @@ export type Character = {
   gradient: string;
   voice: string;
   initialHints: [string, string];
+  level2?: {
+    connectorVideo: string;
+    options: { positive: string; negative: string };
+    replies: { positive: string; negative: string };
+    videos: { positive: string; negative: string };
+  };
+  negativeFollowup?: {
+    video: string;
+    reply: string;
+  };
 };
 
 export const characters: Character[] = [
@@ -34,11 +44,11 @@ export const characters: Character[] = [
     firstLine:
       "Thank you so much for having me over tonight. Your home is really beautiful — David's told me so much about you.",
     optionPositive:
-      "It's so wonderful to finally meet you, Linda. David's been so excited about tonight.",
+      "Oh, thank you! Yeah, I got hooked on woodworking tutorials a few years back. David mentioned you've been getting into pottery lately. How's that going?",
     optionNegative:
-      "So, how serious is this thing with David? You two haven't known each other that long.",
+      "Yeah, a while back. So how are things going with you and David?",
     positiveReply:
-      "That's so kind, thank you. Honestly, I've been nervous all week — I really wanted tonight to go well. He talks about you all the time.",
+      "I'm so glad you asked about pottery! I started during the pandemic, honestly — it's become such a grounding thing for me.",
     negativeReply:
       "Oh... um, almost a year now. I — I really care about him, if that's what you're asking. He means a lot to me.",
     systemPrompt: `You are Linda, a 27-year-old American woman. You're meeting your boyfriend David's parent for the very first time at their home. You and David have been together for almost a year. You're polite, warm, and slightly nervous — you really want to make a good impression. You speak naturally in English.
@@ -55,6 +65,27 @@ Rules:
       "Please, make yourself at home — we've been excited to meet you too.",
       "So, how serious is this thing with David exactly?",
     ],
+    level2: {
+      connectorVideo: "positive-followup",
+      options: {
+        positive:
+          "Actually yes — I do woodworking. There's something meditative about working with your hands.",
+        negative:
+          "Not really, work eats all my time. So tell me — how serious is this thing with David?",
+      },
+      replies: {
+        positive:
+          "Oh that's so cool — I'd love to see something you made sometime. Working with your hands really does something for your head, doesn't it?",
+        negative:
+          "Almost a year now. I — I really care about him. He's been so kind, and his family clearly means a lot to him.",
+      },
+      videos: { positive: "positive-l2-pos", negative: "positive-l2-neg" },
+    },
+    negativeFollowup: {
+      video: "negative-followup",
+      reply:
+        "You know what — let me go check if David needs a hand in the kitchen. Excuse me.",
+    },
   },
   {
     id: "mark",

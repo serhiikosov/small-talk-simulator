@@ -1,5 +1,14 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { Lora } from "next/font/google";
+
+const lora = Lora({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-lora",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Small Talk Simulator",
@@ -44,7 +53,7 @@ function StatusBar() {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="uk">
+    <html lang="uk" className={lora.variable}>
       <body className="phone-glow text-slate-100">
         <div className="flex min-h-[100dvh] items-stretch justify-center sm:items-center sm:p-6">
           <div className="relative flex w-full max-w-[440px] flex-col overflow-hidden bg-gradient-to-b from-slate-950 via-indigo-950/30 to-slate-950 min-h-[100dvh] sm:min-h-0 sm:h-[860px] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[44px] sm:border sm:border-white/10 sm:shadow-[0_30px_120px_-20px_rgba(124,58,237,0.45),0_0_0_1px_rgba(255,255,255,0.03)]">

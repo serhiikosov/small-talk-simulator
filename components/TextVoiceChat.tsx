@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import type { Character } from "@/lib/characters";
+import { SAMPLE_SESSION } from "@/lib/summary";
 import InterestBar from "./InterestBar";
 import VoiceRecorder from "./VoiceRecorder";
+import ConversationSummary from "./ConversationSummary";
 
 type Message = { role: "user" | "model"; text: string };
 
@@ -152,23 +153,51 @@ export default function TextVoiceChat({ character }: { character: Character }) {
 
   const turnsLeft = MAX_USER_TURNS - turnsUsed;
 
+  function restartConversation() {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    audioCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
+    audioCacheRef.current = new Map();
+    lastAutoPlayed.current = -1;
+    setMessages([{ role: "model", text: character.firstLine }]);
+    setInput("");
+    setInterest(50);
+    setTurnsUsed(0);
+    setLoading(false);
+    setEnded(false);
+    setError(null);
+    setHints(character.initialHints);
+    setPlayingIdx(null);
+    setLoadingAudioIdx(null);
+  }
+
+  if (ended) {
+    return (
+      <ConversationSummary
+        session={SAMPLE_SESSION}
+        characterId={character.id}
+        onRestart={restartConversation}
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <InterestBar value={interest} />
 
-      <div className="flex items-center justify-between px-5 pb-2 text-[11px] text-slate-400">
+      <div className="flex items-center justify-between px-5 pb-3 text-[12px] text-slate-400">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
           {character.name} онлайн
         </span>
-        <span className="rounded-full bg-white/5 px-2 py-0.5">
+        <span className="rounded-full bg-white/5 px-2.5 py-1">
           реплік: <span className="font-mono text-slate-200">{Math.max(0, turnsLeft)}</span>/{MAX_USER_TURNS}
         </span>
       </div>
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 space-y-2.5 overflow-y-auto scrollbar-thin px-5 pb-3"
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto scrollbar-thin px-5 pb-4"
       >
         {messages.map((m, i) => {
           const isUser = m.role === "user";
@@ -180,12 +209,12 @@ export default function TextVoiceChat({ character }: { character: Character }) {
               className={`flex ${isUser ? "justify-end" : "justify-start"} animate-fade-in`}
             >
               {!isUser && (
-                <div className="mr-2 mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm">
+                <div className="mr-2 mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-base">
                   {character.avatar}
                 </div>
               )}
               <div
-                className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed shadow-sm ${
+                className={`max-w-[80%] rounded-2xl px-4 py-3 text-[16px] leading-relaxed shadow-sm ${
                   isUser
                     ? "rounded-br-md bg-accent-500 text-white"
                     : "rounded-bl-md bg-white/10 text-slate-100"
@@ -195,7 +224,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
                 {!isUser && (
                   <button
                     onClick={() => toggleAudio(i, m.text)}
-                    className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] transition ${
+                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] transition ${
                       isPlaying
                         ? "bg-accent-500/30 text-accent-400"
                         : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200"
@@ -226,10 +255,10 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         })}
         {loading && (
           <div className="flex justify-start animate-fade-in">
-            <div className="mr-2 mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm">
+            <div className="mr-2 mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-base">
               {character.avatar}
             </div>
-            <div className="rounded-2xl rounded-bl-md bg-white/10 px-4 py-2.5">
+            <div className="rounded-2xl rounded-bl-md bg-white/10 px-4 py-3">
               <span className="inline-flex items-center gap-1">
                 <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.3s]" />
                 <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.15s]" />
@@ -249,16 +278,16 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       {!ended && !loading && hints && (
         <div
           key={`hints-${turnsUsed}`}
-          className="space-y-1.5 px-4 pb-2 animate-fade-in"
+          className="space-y-2 px-4 pb-3 animate-fade-in"
         >
-          <p className="pl-1 text-[10px] uppercase tracking-widest text-slate-500">
+          <p className="pl-1 text-[11px] uppercase tracking-widest text-slate-500">
             💡 Підказки
           </p>
           {hints.map((hint, i) => (
             <button
               key={i}
               onClick={() => sendMessage(hint)}
-              className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-left text-[13px] leading-snug text-slate-200 transition hover:border-accent-400/60 hover:bg-accent-500/10 active:scale-[0.98]"
+              className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-[15px] leading-snug text-slate-200 transition hover:border-accent-400/60 hover:bg-accent-500/10 active:scale-[0.98]"
             >
               {hint}
             </button>
@@ -266,71 +295,47 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         </div>
       )}
 
-      {!ended ? (
-        <form
-          className="flex items-end gap-2 border-t border-white/5 bg-slate-950/80 px-4 py-3 backdrop-blur"
-          onSubmit={(e) => {
-            e.preventDefault();
-            sendMessage(input);
-          }}
-        >
-          <div className="flex-1 rounded-3xl border border-white/10 bg-white/5 focus-within:border-accent-400 focus-within:bg-white/8">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(input);
-                }
-              }}
-              disabled={loading || ended}
-              placeholder="Напиши або скажи..."
-              rows={1}
-              className="block max-h-32 w-full resize-none bg-transparent px-4 py-3 text-[14px] text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
-            />
-          </div>
-          {input.trim() ? (
-            <button
-              type="submit"
-              disabled={loading || ended}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)] transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
-              title="Надіслати"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 11.5 21 3l-8.5 18-2-7.5L3 11.5Z" />
-              </svg>
-            </button>
-          ) : (
-            <VoiceRecorder
-              disabled={loading || ended}
-              onTranscribed={(t) => sendMessage(t)}
-            />
-          )}
-        </form>
-      ) : (
-        <div className="mx-4 mb-4 mt-2 flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-4 text-center animate-fade-in">
-          <p className="text-[12px] text-slate-400">Розмову завершено</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-semibold text-white">{interest}</span>
-            <span className="text-xs text-slate-500">/100</span>
-          </div>
-          <div className="flex w-full gap-2">
-            <Link
-              href={`/simulation/${character.id}/text-voice`}
-              className="flex-1 rounded-full border border-white/15 px-3 py-2 text-[13px] font-medium text-white transition hover:bg-white/10 active:scale-[0.98]"
-            >
-              Ще раз
-            </Link>
-            <Link
-              href="/"
-              className="flex-1 rounded-full bg-accent-500 px-3 py-2 text-[13px] font-semibold text-white transition hover:bg-accent-400 active:scale-[0.98]"
-            >
-              Меню
-            </Link>
-          </div>
+      <form
+        className="flex items-end gap-3 border-t border-white/5 bg-slate-950/80 px-4 py-4 backdrop-blur"
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage(input);
+        }}
+      >
+        <div className="flex-1 rounded-3xl border border-white/10 bg-white/5 focus-within:border-accent-400 focus-within:bg-white/8">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(input);
+              }
+            }}
+            disabled={loading}
+            placeholder="Напиши або скажи..."
+            rows={1}
+            className="block max-h-32 w-full resize-none bg-transparent px-4 py-4 text-[16px] text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+          />
         </div>
-      )}
+        {input.trim() ? (
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)] transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
+            title="Надіслати"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 11.5 21 3l-8.5 18-2-7.5L3 11.5Z" />
+            </svg>
+          </button>
+        ) : (
+          <VoiceRecorder
+            disabled={loading}
+            onTranscribed={(t) => sendMessage(t)}
+          />
+        )}
+      </form>
     </div>
   );
 }

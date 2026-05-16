@@ -4,67 +4,171 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Character } from "@/lib/characters";
 
-type Phase = "intro" | "choice" | "branch-positive" | "branch-negative" | "end";
-type Scene = "intro" | "positive" | "negative";
+type Phase =
+  | "intro"
+  | "choice-1"
+  | "branch-positive"
+  | "branch-negative"
+  | "positive-followup"
+  | "choice-2"
+  | "branch-l2-positive"
+  | "branch-l2-negative"
+  | "negative-followup"
+  | "end";
 
-function videoSrc(characterId: string, scene: Scene) {
+type LastChoice = { level: 1 | 2; branch: "positive" | "negative" };
+
+function videoSrc(characterId: string, scene: string) {
   return `/videos/${characterId}/${scene}.mp4`;
+}
+
+function isVideoPhase(p: Phase): boolean {
+  return (
+    p === "intro" ||
+    p === "branch-positive" ||
+    p === "branch-negative" ||
+    p === "positive-followup" ||
+    p === "branch-l2-positive" ||
+    p === "branch-l2-negative" ||
+    p === "negative-followup"
+  );
+}
+
+function isChoicePhase(p: Phase): boolean {
+  return p === "choice-1" || p === "choice-2";
+}
+
+function phaseToScene(phase: Phase, c: Character): string | null {
+  switch (phase) {
+    case "intro":
+      return "intro";
+    case "branch-positive":
+      return "positive";
+    case "branch-negative":
+      return "negative";
+    case "positive-followup":
+      return c.level2?.connectorVideo ?? null;
+    case "branch-l2-positive":
+      return c.level2?.videos.positive ?? null;
+    case "branch-l2-negative":
+      return c.level2?.videos.negative ?? null;
+    case "negative-followup":
+      return c.negativeFollowup?.video ?? null;
+    default:
+      return null;
+  }
+}
+
+function phaseToFallbackText(phase: Phase, c: Character): string {
+  switch (phase) {
+    case "intro":
+      return c.firstLine;
+    case "branch-positive":
+      return c.positiveReply;
+    case "branch-negative":
+      return c.negativeReply;
+    case "positive-followup":
+      return "Do you have anything like that — something you do with your hands?";
+    case "branch-l2-positive":
+      return c.level2?.replies.positive ?? "";
+    case "branch-l2-negative":
+      return c.level2?.replies.negative ?? "";
+    case "negative-followup":
+      return c.negativeFollowup?.reply ?? "";
+    default:
+      return "";
+  }
 }
 
 export default function InteractiveScene({ character }: { character: Character }) {
   const [phase, setPhase] = useState<Phase>("intro");
+  // Tracks the last video phase whose frame should remain visible behind
+  // choice/end overlays. Only updated when entering a video phase, so during
+  // `choice-*` / `end` the previous video stays mounted on its final frame.
+  const [displayPhase, setDisplayPhase] = useState<Phase>("intro");
   const [videoFailed, setVideoFailed] = useState(false);
   const [muted, setMuted] = useState(false);
   const [needsTap, setNeedsTap] = useState(false);
-  const [lastBranch, setLastBranch] = useState<"positive" | "negative" | null>(null);
+  const [audioEverActivated, setAudioEverActivated] = useState(false);
+  const [captionsOn, setCaptionsOn] = useState(true);
+  const [lastChoice, setLastChoice] = useState<LastChoice | null>(null);
+  const [pendingChoice, setPendingChoice] = useState<"positive" | "negative" | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const currentScene: Scene =
-    phase === "branch-positive"
-      ? "positive"
-      : phase === "branch-negative"
-      ? "negative"
-      : "intro";
+  useEffect(() => {
+    return () => {
+      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    };
+  }, []);
 
-  const currentText =
-    phase === "branch-positive"
-      ? character.positiveReply
-      : phase === "branch-negative"
-      ? character.negativeReply
-      : character.firstLine;
+  useEffect(() => {
+    if (isVideoPhase(phase)) setDisplayPhase(phase);
+  }, [phase]);
 
-  // Auto-play on scene change. Try with sound first, fall back to muted.
+  const displayScene = phaseToScene(displayPhase, character);
+  const displayText = phaseToFallbackText(displayPhase, character);
+
+  // Auto-play when entering a new video phase. Try with sound first, fall back to muted.
   useEffect(() => {
     if (videoFailed) return;
-    if (phase === "choice" || phase === "end") return;
+    if (!isVideoPhase(phase)) return;
     const v = videoRef.current;
     if (!v) return;
     v.muted = false;
     setMuted(false);
     setNeedsTap(false);
     const p = v.play();
-    if (p && typeof p.catch === "function") {
-      p.catch(() => {
+    if (p && typeof p.then === "function") {
+      p.then(() => {
+        if (!v.muted) setAudioEverActivated(true);
+      }).catch(() => {
         v.muted = true;
         setMuted(true);
-        setNeedsTap(true);
+        if (!audioEverActivated) setNeedsTap(true);
         v.play().catch(() => {});
       });
     }
-  }, [currentScene, phase, videoFailed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayScene, phase, videoFailed]);
 
-  // Fallback timers when no video files
+  // Fallback timers when no video files (text overlay).
   useEffect(() => {
     if (!videoFailed) return;
     if (phase === "intro") {
-      const t = setTimeout(() => setPhase("choice"), 4500);
+      const t = setTimeout(() => setPhase("choice-1"), 4500);
       return () => clearTimeout(t);
     }
-    if (phase === "branch-positive" || phase === "branch-negative") {
+    if (phase === "branch-positive") {
+      const t = setTimeout(() => advanceFromBranchPositive(), 5500);
+      return () => clearTimeout(t);
+    }
+    if (phase === "branch-negative") {
+      const t = setTimeout(() => advanceFromBranchNegative(), 5500);
+      return () => clearTimeout(t);
+    }
+    if (phase === "positive-followup") {
+      const t = setTimeout(() => setPhase("choice-2"), 5500);
+      return () => clearTimeout(t);
+    }
+    if (
+      phase === "branch-l2-positive" ||
+      phase === "branch-l2-negative" ||
+      phase === "negative-followup"
+    ) {
       const t = setTimeout(() => setPhase("end"), 5500);
       return () => clearTimeout(t);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, videoFailed]);
+
+  function advanceFromBranchPositive() {
+    setPhase(character.level2 ? "positive-followup" : "end");
+  }
+
+  function advanceFromBranchNegative() {
+    setPhase(character.negativeFollowup ? "negative-followup" : "end");
+  }
 
   function toggleMute() {
     const v = videoRef.current;
@@ -72,43 +176,84 @@ export default function InteractiveScene({ character }: { character: Character }
     v.muted = !v.muted;
     setMuted(v.muted);
     setNeedsTap(false);
+    if (!v.muted) setAudioEverActivated(true);
+  }
+
+  function clearPending() {
+    if (pendingTimerRef.current) {
+      clearTimeout(pendingTimerRef.current);
+      pendingTimerRef.current = null;
+    }
+    setPendingChoice(null);
   }
 
   function restart() {
-    setLastBranch(null);
+    clearPending();
+    setLastChoice(null);
     setPhase("intro");
   }
 
-  function tryOtherBranch() {
-    if (!lastBranch) return;
-    setPhase(lastBranch === "positive" ? "branch-negative" : "branch-positive");
+  function tryOther() {
+    if (!lastChoice) return;
+    clearPending();
+    if (lastChoice.level === 1) {
+      const other = lastChoice.branch === "positive" ? "negative" : "positive";
+      setLastChoice({ level: 1, branch: other });
+      setPhase(other === "positive" ? "branch-positive" : "branch-negative");
+    } else {
+      setLastChoice(null);
+      setPhase("choice-2");
+    }
   }
 
-  function pickPositive() {
-    setLastBranch("positive");
-    setPhase("branch-positive");
+  function pick(level: 1 | 2, branch: "positive" | "negative") {
+    if (pendingChoice) return;
+    setPendingChoice(branch);
+    setLastChoice({ level, branch });
+    pendingTimerRef.current = setTimeout(() => {
+      setPendingChoice(null);
+      if (level === 1) {
+        setPhase(branch === "positive" ? "branch-positive" : "branch-negative");
+      } else {
+        setPhase(branch === "positive" ? "branch-l2-positive" : "branch-l2-negative");
+      }
+    }, 2000);
   }
 
-  function pickNegative() {
-    setLastBranch("negative");
-    setPhase("branch-negative");
-  }
+  const showMuteUI = !videoFailed && isVideoPhase(phase);
+  const choiceContext: 1 | 2 | null =
+    phase === "choice-1" ? 1 : phase === "choice-2" ? 2 : null;
+  const optionPositive =
+    choiceContext === 1
+      ? character.optionPositive
+      : character.level2?.options.positive ?? "";
+  const optionNegative =
+    choiceContext === 1
+      ? character.optionNegative
+      : character.level2?.options.negative ?? "";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
       <div className="relative flex-1 overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
-        {!videoFailed && (
+        {!videoFailed && displayScene && (
           <video
             ref={videoRef}
-            key={currentScene}
+            key={displayScene}
             className="absolute inset-0 h-full w-full object-cover"
-            src={videoSrc(character.id, currentScene)}
+            src={videoSrc(character.id, displayScene)}
             playsInline
             preload="auto"
             onError={() => setVideoFailed(true)}
             onEnded={() => {
-              if (phase === "intro") setPhase("choice");
-              else if (phase === "branch-positive" || phase === "branch-negative")
+              if (phase === "intro") setPhase("choice-1");
+              else if (phase === "branch-positive") advanceFromBranchPositive();
+              else if (phase === "branch-negative") advanceFromBranchNegative();
+              else if (phase === "positive-followup") setPhase("choice-2");
+              else if (
+                phase === "branch-l2-positive" ||
+                phase === "branch-l2-negative" ||
+                phase === "negative-followup"
+              )
                 setPhase("end");
             }}
           />
@@ -122,17 +267,30 @@ export default function InteractiveScene({ character }: { character: Character }
             <div className="relative flex flex-col items-center">
               <span className="mb-5 text-7xl drop-shadow-2xl">{character.avatar}</span>
               <p className="max-w-[280px] text-[15px] font-medium leading-relaxed text-white animate-fade-in">
-                {currentText}
+                {displayText}
               </p>
             </div>
             <p className="absolute inset-x-0 bottom-4 text-center text-[10px] uppercase tracking-widest text-white/40">
-              placeholder · додай {currentScene}.mp4
+              placeholder · додай {displayScene}.mp4
             </p>
           </div>
         )}
 
-        {/* Top-right mute toggle (only while a video is playing) */}
-        {!videoFailed && (phase === "intro" || phase === "branch-positive" || phase === "branch-negative") && (
+        {/* Top-right controls (captions + mute) */}
+        {showMuteUI && (
+          <button
+            type="button"
+            onClick={() => setCaptionsOn((v) => !v)}
+            className={`absolute top-3 right-14 z-20 inline-flex h-9 items-center gap-1 rounded-full bg-black/60 px-2.5 text-[11px] font-bold text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
+              captionsOn ? "" : "opacity-50"
+            }`}
+            aria-label={captionsOn ? "Сховати субтитри" : "Показати субтитри"}
+            title={captionsOn ? "Сховати субтитри" : "Показати субтитри"}
+          >
+            CC
+          </button>
+        )}
+        {showMuteUI && (
           <button
             type="button"
             onClick={toggleMute}
@@ -153,8 +311,8 @@ export default function InteractiveScene({ character }: { character: Character }
           </button>
         )}
 
-        {/* "Tap to unmute" centered overlay if autoplay-with-sound was blocked */}
-        {needsTap && muted && (phase === "intro" || phase === "branch-positive" || phase === "branch-negative") && (
+        {/* "Tap to unmute" overlay — only on first video before audio is ever activated */}
+        {needsTap && muted && !audioEverActivated && showMuteUI && (
           <button
             type="button"
             onClick={toggleMute}
@@ -169,22 +327,43 @@ export default function InteractiveScene({ character }: { character: Character }
           </button>
         )}
 
-        {/* Choice buttons over video bottom */}
-        {phase === "choice" && (
+        {/* Subtitles */}
+        {captionsOn && !videoFailed && isVideoPhase(phase) && displayText && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4 animate-fade-in">
+            <p className="max-w-[88%] rounded-lg bg-black/70 px-3 py-1.5 text-center text-[14px] leading-snug text-white backdrop-blur-sm">
+              {displayText}
+            </p>
+          </div>
+        )}
+
+        {/* Choice buttons (level 1 or 2) */}
+        {isChoicePhase(phase) && choiceContext && (
           <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/95 via-black/75 to-transparent p-4 pt-20 animate-slide-up">
             <p className="mb-1 px-1 text-[11px] uppercase tracking-widest text-white/70">
-              Як відповіси?
+              {pendingChoice
+                ? "Обрано..."
+                : choiceContext === 2
+                ? "А далі?"
+                : "Як відповіси?"}
             </p>
-            <ChoiceButton
-              tone="positive"
-              onClick={pickPositive}
-              label={character.optionPositive}
-            />
-            <ChoiceButton
-              tone="negative"
-              onClick={pickNegative}
-              label={character.optionNegative}
-            />
+            {(pendingChoice === null || pendingChoice === "positive") && (
+              <ChoiceButton
+                tone="positive"
+                onClick={() => pick(choiceContext, "positive")}
+                label={optionPositive}
+                selected={pendingChoice === "positive"}
+                disabled={pendingChoice !== null}
+              />
+            )}
+            {(pendingChoice === null || pendingChoice === "negative") && (
+              <ChoiceButton
+                tone="negative"
+                onClick={() => pick(choiceContext, "negative")}
+                label={optionNegative}
+                selected={pendingChoice === "negative"}
+                disabled={pendingChoice !== null}
+              />
+            )}
           </div>
         )}
 
@@ -196,19 +375,15 @@ export default function InteractiveScene({ character }: { character: Character }
                 Сценарій завершено
               </p>
               <p className="mt-2 text-[14px] leading-relaxed text-slate-200">
-                {lastBranch === "positive"
-                  ? "Тепла гілка пройдена. Цікаво, як піде інша?"
-                  : lastBranch === "negative"
-                  ? "Ризикована гілка пройдена. А якщо обрати інакше?"
-                  : "Готовий спробувати ще раз?"}
+                {endMessage(lastChoice)}
               </p>
               <div className="mt-4 flex gap-2">
-                {lastBranch && (
+                {lastChoice && (
                   <button
-                    onClick={tryOtherBranch}
+                    onClick={tryOther}
                     className="flex-1 rounded-full bg-accent-500 px-3 py-2.5 text-[13px] font-semibold text-white transition hover:bg-accent-400 active:scale-[0.98]"
                   >
-                    Інша гілка
+                    {lastChoice.level === 2 ? "Інший вибір тут" : "Інша гілка"}
                   </button>
                 )}
                 <button
@@ -232,20 +407,49 @@ export default function InteractiveScene({ character }: { character: Character }
   );
 }
 
+function endMessage(last: LastChoice | null): string {
+  if (!last) return "Готовий спробувати ще раз?";
+  if (last.level === 1) {
+    return last.branch === "positive"
+      ? "Тепла гілка пройдена. Цікаво, як піде інша?"
+      : "Ризикована гілка пройдена. А якщо обрати інакше?";
+  }
+  return last.branch === "positive"
+    ? "Розмова склалась добре. Спробуй інший вибір на другому кроці?"
+    : "Розмова стала прохолоднішою. Можна було м'якше — спробуй інший варіант.";
+}
+
 function ChoiceButton({
   label,
   onClick,
+  selected = false,
+  disabled = false,
 }: {
   tone: "positive" | "negative";
   label: string;
   onClick: () => void;
+  selected?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-left text-[16px] font-medium leading-snug text-white backdrop-blur transition hover:bg-white/15 active:scale-[0.98]"
+      disabled={disabled}
+      className={`relative rounded-2xl border px-4 py-3 pr-11 text-left text-[16px] font-medium leading-snug text-white backdrop-blur transition active:scale-[0.98] disabled:cursor-default disabled:active:scale-100 ${
+        selected
+          ? "border-accent-400 bg-accent-500/25 shadow-lg shadow-accent-500/20"
+          : "border-white/15 bg-white/10 hover:bg-white/15"
+      }`}
     >
       {label}
+      {selected && (
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center">
+          <svg className="h-5 w-5 animate-spin text-white/90" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity=".25" strokeWidth="3" />
+            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+        </span>
+      )}
     </button>
   );
 }

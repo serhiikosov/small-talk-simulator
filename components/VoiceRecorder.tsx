@@ -65,31 +65,31 @@ export default function VoiceRecorder({ disabled, onTranscribed }: Props) {
         type="button"
         disabled={disabled || processing}
         onClick={recording ? stop : start}
-        className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition active:scale-95 ${
+        className={`relative inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
           recording
-            ? "bg-rose-500 text-white shadow-[0_0_0_4px_rgba(244,63,94,0.25)]"
+            ? "bg-rose-500 text-white shadow-[0_0_0_5px_rgba(244,63,94,0.25)]"
             : "bg-white/10 text-slate-200 hover:bg-white/15"
         } disabled:cursor-not-allowed disabled:opacity-40`}
         title={recording ? "Зупинити" : "Записати голосом"}
       >
         {processing ? (
-          <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+          <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity=".2" strokeWidth="3" />
             <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
           </svg>
         ) : recording ? (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="6" width="12" height="12" rx="2" />
           </svg>
         ) : (
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
           </svg>
         )}
         {recording && (
-          <span className="absolute -top-0.5 -right-0.5 inline-flex h-2.5 w-2.5">
+          <span className="absolute -top-0.5 -right-0.5 inline-flex h-3 w-3">
             <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-rose-400 opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
           </span>
         )}
       </button>
