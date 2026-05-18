@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { Character } from "@/lib/characters";
-import { SAMPLE_SESSION } from "@/lib/summary";
+import { getSampleSession } from "@/lib/summary";
 import InterestBar from "./InterestBar";
 import VoiceRecorder from "./VoiceRecorder";
 import ConversationSummary from "./ConversationSummary";
@@ -346,10 +346,11 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         {header}
-        <div className="min-h-0 flex-1 animate-fade-in-slow">
+        <div className="flex min-h-0 flex-1 flex-col animate-fade-in-slow">
           <ConversationSummary
-            session={SAMPLE_SESSION}
+            session={getSampleSession(character.id)}
             characterId={character.id}
+            characterName={character.name}
             onRestart={restartConversation}
           />
         </div>

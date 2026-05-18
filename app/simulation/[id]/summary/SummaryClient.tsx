@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConversationSummary from "@/components/ConversationSummary";
-import { SAMPLE_SESSION } from "@/lib/summary";
+import { getSampleSession } from "@/lib/summary";
 
 export default function SummaryClient({
   characterId,
@@ -37,8 +37,9 @@ export default function SummaryClient({
         <span className="w-9" />
       </div>
       <ConversationSummary
-        session={SAMPLE_SESSION}
+        session={getSampleSession(characterId)}
         characterId={characterId}
+        characterName={characterName}
         onRestart={() => router.push(`/simulation/${characterId}/text-voice`)}
       />
     </div>

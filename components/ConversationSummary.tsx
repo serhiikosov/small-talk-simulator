@@ -10,108 +10,96 @@ const MUTED = "#6B7280";
 type Props = {
   session: Session;
   characterId: string;
+  characterName: string;
   onRestart: () => void;
 };
 
 export default function ConversationSummary({
   session,
   characterId,
+  characterName,
   onRestart,
 }: Props) {
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
-  const scrollRootRef = useRef<HTMLDivElement>(null);
 
   function seeMoment(idx: number) {
     setTranscriptOpen(true);
     setHighlightIndex(idx);
     setTimeout(() => {
-      const el = document.getElementById(`msg-${idx}`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById(`msg-${idx}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     }, 80);
-    // Clear highlight after a few seconds (visual ping)
     setTimeout(() => setHighlightIndex(null), 3500);
   }
 
   return (
-    <div
-      ref={scrollRootRef}
-      className="min-h-0 flex-1 overflow-y-auto scrollbar-thin"
-    >
-      <div className="space-y-8 px-5 pb-8 pt-4">
-        <div
-          className="space-y-2 text-center animate-block-in"
-          style={{ animationDelay: "0ms" }}
-        >
-          <p className="text-[11px] uppercase tracking-[0.32em] text-slate-500">
-            Conversation complete
-          </p>
-          <p className="font-serif text-[17px] italic leading-relaxed text-slate-200">
-            Linda just left the room.<br />Here's what stayed with her.
-          </p>
-        </div>
+    <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+      <div className="px-6 pb-10 pt-6">
+        <HeroPoster
+          hero={session.analysis.heroMoment}
+          characterName={characterName}
+        />
 
-        <div className="animate-block-in" style={{ animationDelay: "120ms" }}>
-          <HeroMoment hero={session.analysis.heroMoment} />
-        </div>
-
-        <div className="animate-block-in" style={{ animationDelay: "260ms" }}>
-          <InterestCurve
+        <div className="mt-10 space-y-7">
+          <CurveSection
             transcript={session.transcript}
             summary={session.analysis.curveSummary}
+            characterName={characterName}
           />
-        </div>
 
-        <div className="animate-block-in" style={{ animationDelay: "400ms" }}>
-          <NoticeLists
+          <InsightsSection
             whatWorked={session.analysis.whatWorked}
             worthNoticing={session.analysis.worthNoticing}
             onSeeMoment={seeMoment}
           />
         </div>
 
-        <div className="animate-block-in" style={{ animationDelay: "540ms" }}>
-          <FullBreakdown
-            transcript={session.transcript}
-            annotations={session.analysis.transcriptAnnotations}
-            open={transcriptOpen}
-            setOpen={setTranscriptOpen}
-            highlightIndex={highlightIndex}
-          />
-        </div>
+        <TranscriptSection
+          transcript={session.transcript}
+          annotations={session.analysis.transcriptAnnotations}
+          open={transcriptOpen}
+          setOpen={setTranscriptOpen}
+          highlightIndex={highlightIndex}
+          characterName={characterName}
+        />
 
-        <div className="animate-block-in" style={{ animationDelay: "680ms" }}>
-          <Footer characterId={characterId} onRestart={onRestart} />
-        </div>
+        <Footer characterId={characterId} onRestart={onRestart} />
       </div>
     </div>
   );
 }
 
-/* ───────── Block 1: Hero Moment ───────── */
+/* ───────── Hero poster ───────── */
 
-function HeroMoment({ hero }: { hero: Session["analysis"]["heroMoment"] }) {
+function HeroPoster({
+  hero,
+  characterName,
+}: {
+  hero: Session["analysis"]["heroMoment"];
+  characterName: string;
+}) {
   return (
-    <section>
-      <p className="mb-3 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] text-slate-400">
-        <span className="text-coral">✦</span> The moment that mattered
+    <section className="animate-block-in" style={{ animationDelay: "0ms" }}>
+      <p className="text-[10px] uppercase tracking-[0.4em] text-coral">
+        {characterName}'s takeaway
       </p>
-      <div className="overflow-hidden rounded-3xl border border-coral/20 bg-gradient-to-br from-coral/10 via-white/[0.03] to-white/[0.02] p-6 shadow-[0_10px_40px_-15px_rgba(224,120,86,0.35)]">
-        <p className="font-serif text-[21px] leading-[1.5] text-white">
-          <span className="text-coral">“</span>
-          {hero.quote}
-          <span className="text-coral">”</span>
-        </p>
-        <div className="my-5 h-px w-12 bg-coral/40" />
-        <p className="text-[14px] leading-relaxed text-slate-300">
-          {hero.lesson}
-        </p>
-      </div>
+      <blockquote className="mt-5 font-serif text-[22px] leading-[1.42] text-white">
+        <span className="text-coral">“</span>
+        {hero.quote}
+        <span className="text-coral">”</span>
+      </blockquote>
+      <div className="mt-6 h-px w-10 bg-coral/40" />
+      <p className="mt-5 font-serif text-[14px] italic leading-relaxed text-slate-400">
+        {hero.lesson}
+      </p>
     </section>
   );
 }
 
-/* ───────── Block 2: Interest Curve ───────── */
+/* ───────── Curve ───────── */
 
 type ChartPoint = {
   transcriptIndex: number;
@@ -119,20 +107,19 @@ type ChartPoint = {
   userLine: string | null;
 };
 
-function InterestCurve({
+function CurveSection({
   transcript,
   summary,
+  characterName,
 }: {
   transcript: TranscriptEntry[];
   summary: string;
+  characterName: string;
 }) {
-  // Plot Linda's interest level over the conversation. Tooltip shows the user
-  // line that triggered each new value.
   const points = useMemo<ChartPoint[]>(() => {
     return transcript
       .map((t, i) => {
-        if (t.speaker !== "linda" || t.interestLevel === undefined) return null;
-        // The user line that triggered this interest level is the previous user msg
+        if (t.speaker !== "model" || t.interestLevel === undefined) return null;
         let userLine: string | null = null;
         for (let j = i - 1; j >= 0; j--) {
           if (transcript[j].speaker === "user") {
@@ -140,28 +127,22 @@ function InterestCurve({
             break;
           }
         }
-        return {
-          transcriptIndex: i,
-          value: t.interestLevel,
-          userLine,
-        };
+        return { transcriptIndex: i, value: t.interestLevel, userLine };
       })
       .filter((p): p is ChartPoint => p !== null);
   }, [transcript]);
 
   const W = 340;
-  const H = 100;
-  const PAD_X = 12;
-  const PAD_Y = 14;
+  const H = 70;
+  const PAD_X = 6;
+  const PAD_Y = 12;
   const innerW = W - PAD_X * 2;
   const innerH = H - PAD_Y * 2;
 
-  const coords = points.map((p, i) => {
-    const x = points.length > 1 ? PAD_X + (i / (points.length - 1)) * innerW : W / 2;
-    // Higher interest = higher on screen (smaller y)
-    const y = PAD_Y + (1 - p.value / 100) * innerH;
-    return { x, y };
-  });
+  const coords = points.map((p, i) => ({
+    x: points.length > 1 ? PAD_X + (i / (points.length - 1)) * innerW : W / 2,
+    y: PAD_Y + (1 - p.value / 100) * innerH,
+  }));
 
   const pathD = coords
     .map((c, i) => `${i === 0 ? "M" : "L"} ${c.x.toFixed(2)} ${c.y.toFixed(2)}`)
@@ -170,7 +151,6 @@ function InterestCurve({
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close tooltip on outside tap
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (activeIdx === null) return;
@@ -182,131 +162,114 @@ function InterestCurve({
   }, [activeIdx]);
 
   return (
-    <section ref={containerRef}>
-      <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-slate-400">
-        How Linda felt, moment by moment
+    <section
+      ref={containerRef}
+      className="animate-block-in"
+      style={{ animationDelay: "160ms" }}
+    >
+      <p className="font-serif text-[14px] italic leading-relaxed text-slate-400">
+        {summary}
       </p>
-      <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-4">
-        <div className="relative">
-          <svg
-            viewBox={`0 0 ${W} ${H}`}
-            width="100%"
-            height={120}
-            preserveAspectRatio="none"
-            className="block"
-          >
-            <defs>
-              <linearGradient id="curveGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={CORAL} />
-                <stop offset="55%" stopColor="#B98F6F" />
-                <stop offset="100%" stopColor={MUTED} />
-              </linearGradient>
-              <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={CORAL} stopOpacity="0.18" />
-                <stop offset="100%" stopColor={MUTED} stopOpacity="0.02" />
-              </linearGradient>
-            </defs>
 
-            {/* Subtle baseline */}
-            <line
-              x1={PAD_X}
-              x2={W - PAD_X}
-              y1={H - PAD_Y}
-              y2={H - PAD_Y}
-              stroke="rgba(255,255,255,0.08)"
-              strokeDasharray="2 4"
-            />
+      <div className="relative mt-3">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width="100%"
+          height={H}
+          preserveAspectRatio="none"
+          className="block"
+        >
+          <defs>
+            <linearGradient id="curveGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={CORAL} />
+              <stop offset="55%" stopColor="#B98F6F" />
+              <stop offset="100%" stopColor={MUTED} />
+            </linearGradient>
+            <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={CORAL} stopOpacity="0.16" />
+              <stop offset="100%" stopColor={MUTED} stopOpacity="0" />
+            </linearGradient>
+          </defs>
 
-            {/* Filled area under the line */}
-            {coords.length > 1 && (
-              <path
-                d={`${pathD} L ${coords[coords.length - 1].x} ${H - PAD_Y} L ${coords[0].x} ${H - PAD_Y} Z`}
-                fill="url(#curveFill)"
-              />
-            )}
-
-            {/* Line */}
+          {coords.length > 1 && (
             <path
-              d={pathD}
-              fill="none"
-              stroke="url(#curveGradient)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-
-            {/* Points */}
-            {coords.map((c, i) => {
-              const isPeak = points[i].value >= 55;
-              const color = isPeak ? CORAL : MUTED;
-              return (
-                <g key={i}>
-                  {/* Visible dot */}
-                  <circle
-                    cx={c.x}
-                    cy={c.y}
-                    r={activeIdx === i ? 6 : 4.5}
-                    fill={color}
-                    stroke="#0b0a14"
-                    strokeWidth="2"
-                    style={{ transition: "r 0.15s" }}
-                  />
-                  {/* Bigger invisible hit area */}
-                  <circle
-                    cx={c.x}
-                    cy={c.y}
-                    r={18}
-                    fill="transparent"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveIdx((p) => (p === i ? null : i));
-                    }}
-                    style={{ cursor: "pointer" }}
-                  />
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Tooltip */}
-          {activeIdx !== null && points[activeIdx] && (
-            <Tooltip
-              point={points[activeIdx]}
-              coord={coords[activeIdx]}
-              chartW={W}
-              chartH={H}
+              d={`${pathD} L ${coords[coords.length - 1].x} ${H - PAD_Y} L ${coords[0].x} ${H - PAD_Y} Z`}
+              fill="url(#curveFill)"
             />
           )}
-        </div>
 
-        {/* X-axis labels */}
-        <div className="mt-2 flex justify-between px-2 text-[10px] uppercase tracking-widest text-slate-500">
+          <path
+            d={pathD}
+            fill="none"
+            stroke="url(#curveGradient)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {coords.map((c, i) => {
+            const isPeak = points[i].value >= 55;
+            const color = isPeak ? CORAL : MUTED;
+            return (
+              <g key={i}>
+                <circle
+                  cx={c.x}
+                  cy={c.y}
+                  r={activeIdx === i ? 4.5 : 3}
+                  fill={color}
+                  stroke="#0a0a14"
+                  strokeWidth="1.5"
+                  style={{ transition: "r 0.15s" }}
+                />
+                <circle
+                  cx={c.x}
+                  cy={c.y}
+                  r={16}
+                  fill="transparent"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveIdx((p) => (p === i ? null : i));
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+              </g>
+            );
+          })}
+        </svg>
+
+        {activeIdx !== null && points[activeIdx] && (
+          <CurveTooltip
+            point={points[activeIdx]}
+            coord={coords[activeIdx]}
+            chartW={W}
+            chartH={H}
+            characterName={characterName}
+          />
+        )}
+
+        <div className="mt-1.5 flex justify-between px-1 text-[9px] uppercase tracking-[0.25em] text-slate-600">
           <span>start</span>
           <span>end</span>
         </div>
-
-        <p className="mt-4 font-serif text-[14px] italic leading-relaxed text-slate-300">
-          {summary}
-        </p>
       </div>
     </section>
   );
 }
 
-function Tooltip({
+function CurveTooltip({
   point,
   coord,
   chartW,
   chartH,
+  characterName,
 }: {
   point: ChartPoint;
   coord: { x: number; y: number };
   chartW: number;
   chartH: number;
+  characterName: string;
 }) {
-  // Position the tooltip near the point as a % of chart so it scales.
   const leftPct = (coord.x / chartW) * 100;
-  // Show above the point if there's room
   const above = coord.y > chartH * 0.45;
   return (
     <div
@@ -326,16 +289,18 @@ function Tooltip({
             <br />“{point.userLine}”
           </>
         ) : (
-          <span className="text-slate-300">Linda opened the conversation.</span>
+          <span className="text-slate-300">
+            {characterName} opened the conversation.
+          </span>
         )}
       </div>
     </div>
   );
 }
 
-/* ───────── Block 3: What worked / Worth noticing ───────── */
+/* ───────── Insights ───────── */
 
-function NoticeLists({
+function InsightsSection({
   whatWorked,
   worthNoticing,
   onSeeMoment,
@@ -345,129 +310,113 @@ function NoticeLists({
   onSeeMoment: (idx: number) => void;
 }) {
   return (
-    <section className="space-y-6">
-      <ListGroup
-        title="What landed"
-        items={whatWorked}
-        tone="coral"
-        onSeeMoment={onSeeMoment}
-      />
-      <ListGroup
-        title="Worth a second look"
-        items={worthNoticing}
-        tone="muted"
-        onSeeMoment={onSeeMoment}
-      />
+    <section
+      className="space-y-1 animate-block-in"
+      style={{ animationDelay: "300ms" }}
+    >
+      {whatWorked.map((item, i) => (
+        <InsightRow
+          key={`good-${i}`}
+          tone="coral"
+          item={item}
+          onSeeMoment={onSeeMoment}
+        />
+      ))}
+      {worthNoticing.map((item, i) => (
+        <InsightRow
+          key={`watch-${i}`}
+          tone="muted"
+          item={item}
+          onSeeMoment={onSeeMoment}
+        />
+      ))}
     </section>
   );
 }
 
-function ListGroup({
-  title,
-  items,
+function firstSentence(text: string): string {
+  const m = text.match(/^[^.!?]+[.!?]/);
+  return m ? m[0].trim() : text;
+}
+
+function InsightRow({
   tone,
+  item,
   onSeeMoment,
 }: {
-  title: string;
-  items: WhatItem[];
   tone: "coral" | "muted";
+  item: WhatItem;
   onSeeMoment: (idx: number) => void;
 }) {
   const isCoral = tone === "coral";
-  const badgeBg = isCoral ? "bg-coral" : "bg-muted";
-  const linkColor = isCoral
-    ? "text-coral hover:text-[#EA8E70]"
-    : "text-slate-300 hover:text-slate-100";
+  const badge = isCoral ? "bg-coral text-white" : "bg-muted text-white";
   const glyph = isCoral ? "✓" : "!";
   return (
-    <div>
-      <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-slate-400">
-        {title}
+    <button
+      onClick={() => onSeeMoment(item.transcriptIndex)}
+      className="group -mx-2 flex w-full items-start gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-white/[0.04]"
+    >
+      <span
+        className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold leading-none ${badge}`}
+      >
+        {glyph}
+      </span>
+      <p className="flex-1 text-[14px] leading-snug text-slate-200">
+        {firstSentence(item.comment)}
       </p>
-      <ul className="space-y-3">
-        {items.map((item, i) => (
-          <li
-            key={i}
-            className="rounded-2xl border border-white/8 bg-white/[0.03] p-4"
-          >
-            <div className="flex items-start gap-3">
-              <span
-                className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${badgeBg} text-[13px] font-semibold leading-none text-white`}
-              >
-                {glyph}
-              </span>
-              <div className="flex-1 space-y-2">
-                <p className="text-[13px] leading-snug text-slate-200">
-                  <span className="text-slate-400">“</span>
-                  {item.line}
-                  <span className="text-slate-400">”</span>
-                </p>
-                <p className="text-[13px] leading-relaxed text-slate-400">
-                  {item.comment}
-                </p>
-                <button
-                  onClick={() => onSeeMoment(item.transcriptIndex)}
-                  className={`text-[12px] font-medium ${linkColor} transition`}
-                >
-                  → revisit this moment
-                </button>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+      <span className="mt-0.5 text-[16px] leading-none text-slate-600 transition group-hover:text-slate-300">
+        →
+      </span>
+    </button>
   );
 }
 
-/* ───────── Block 4: Full breakdown ───────── */
+/* ───────── Transcript ───────── */
 
-function FullBreakdown({
+function TranscriptSection({
   transcript,
   annotations,
   open,
   setOpen,
   highlightIndex,
+  characterName,
 }: {
   transcript: TranscriptEntry[];
   annotations: { [index: number]: string };
   open: boolean;
   setOpen: (v: boolean) => void;
   highlightIndex: number | null;
+  characterName: string;
 }) {
   return (
-    <section>
+    <section
+      className="mt-9 animate-block-in"
+      style={{ animationDelay: "440ms" }}
+    >
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3.5 text-left transition hover:bg-white/[0.05]"
+        className="flex items-center gap-2 text-[13px] font-medium text-slate-400 transition hover:text-slate-200"
       >
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">
-            Replay the whole thing
-          </p>
-          <p className="mt-1 text-[14px] text-slate-200">
-            Every line, with coach notes along the way
-          </p>
-        </div>
-        <span
-          className={`inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-slate-200 transition ${
-            open ? "rotate-180" : ""
-          }`}
+        <span>{open ? "Hide" : "Read"} the full conversation</span>
+        <svg
+          width="10"
+          height="6"
+          viewBox="0 0 12 8"
+          fill="none"
+          className={`transition ${open ? "rotate-180" : ""}`}
         >
-          <svg className="h-3 w-3" viewBox="0 0 12 8" fill="none">
-            <path
-              d="M1 1.5L6 6.5L11 1.5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
+          <path
+            d="M1 1.5L6 6.5L11 1.5"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
       {open && (
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-4 animate-fade-in">
           {transcript.map((m, i) => {
             const isUser = m.speaker === "user";
             const annotation = isUser ? annotations[i] : undefined;
@@ -476,29 +425,27 @@ function FullBreakdown({
               <div
                 key={i}
                 id={`msg-${i}`}
-                className={`rounded-2xl border p-3 transition ${
+                className={`relative pl-4 transition ${
                   isHighlighted
-                    ? "border-coral/60 bg-coral/10 shadow-[0_0_0_4px_rgba(224,120,86,0.12)]"
-                    : "border-white/8 bg-white/[0.02]"
+                    ? "before:absolute before:bottom-0 before:left-0 before:top-0 before:w-[2px] before:rounded-full before:bg-coral"
+                    : "before:absolute before:bottom-0 before:left-0 before:top-0 before:w-[2px] before:rounded-full before:bg-white/10"
                 }`}
               >
                 <p
-                  className={`text-[11px] uppercase tracking-widest ${
-                    isUser ? "text-accent-400" : "text-slate-400"
+                  className={`text-[10px] uppercase tracking-[0.2em] ${
+                    isUser ? "text-accent-400" : "text-slate-500"
                   }`}
                 >
-                  {isUser ? "You" : "Linda"}
+                  {isUser ? "You" : characterName}
                 </p>
-                <p className="mt-1.5 text-[14px] leading-relaxed text-slate-100">
+                <p className="mt-1 text-[14px] leading-relaxed text-slate-100">
                   {m.text}
                 </p>
                 {annotation && (
-                  <div className="mt-2.5 flex gap-2 rounded-lg bg-white/[0.04] px-3 py-2">
-                    <span className="text-coral">↳</span>
-                    <p className="text-[12px] leading-snug text-slate-300">
-                      {annotation}
-                    </p>
-                  </div>
+                  <p className="mt-2 text-[12.5px] italic leading-snug text-coral/90">
+                    <span className="mr-1.5">↳</span>
+                    {annotation}
+                  </p>
                 )}
               </div>
             );
@@ -512,14 +459,17 @@ function FullBreakdown({
 /* ───────── Footer ───────── */
 
 function Footer({
-  characterId,
+  characterId: _characterId,
   onRestart,
 }: {
   characterId: string;
   onRestart: () => void;
 }) {
   return (
-    <div className="space-y-2 pt-2">
+    <div
+      className="mt-10 space-y-2 animate-block-in"
+      style={{ animationDelay: "580ms" }}
+    >
       <Link
         href="/"
         className="block rounded-full bg-accent-500 px-5 py-3.5 text-center text-[14px] font-semibold text-white shadow-[0_10px_30px_-12px_rgba(139,92,246,0.65)] transition active:scale-[0.98] hover:bg-accent-400"
@@ -528,7 +478,7 @@ function Footer({
       </Link>
       <button
         onClick={onRestart}
-        className="block w-full rounded-full border border-white/15 px-5 py-3 text-center text-[14px] font-medium text-slate-200 transition active:scale-[0.98] hover:bg-white/5"
+        className="block w-full rounded-full border border-white/10 px-5 py-3 text-center text-[13px] font-medium text-slate-300 transition active:scale-[0.98] hover:bg-white/5 hover:text-white"
       >
         Try this conversation again
       </button>
