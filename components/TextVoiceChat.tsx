@@ -198,9 +198,12 @@ export default function TextVoiceChat({ character }: { character: Character }) {
   }, []);
 
   // Smooth transition from chat to summary when the conversation ends.
+  // Schedule all stages once when `ended` flips to true. Do NOT include
+  // `endTransition` in deps — its updates would re-run this effect and the
+  // cleanup would cancel the later setTimeouts before they fired.
   useEffect(() => {
-    if (!ended || endTransition !== "chat") return;
-    const start = endReason === "manual" ? 400 : 1600; // shorter pause for user-initiated finish
+    if (!ended) return;
+    const start = endReason === "manual" ? 400 : 1600;
     const t1 = setTimeout(() => setEndTransition("fading"), start);
     const t2 = setTimeout(() => setEndTransition("reflecting"), start + 800);
     const t3 = setTimeout(() => setEndTransition("summary"), start + 1800);
@@ -209,7 +212,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [ended, endTransition, endReason]);
+  }, [ended, endReason]);
 
   function finishConversation() {
     if (ended) return;
@@ -295,6 +298,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     setPlayingIdx(null);
     setLoadingAudioIdx(null);
     setEndTransition("chat");
+    setEndReason("natural");
   }
 
   const inSummaryFlow =
