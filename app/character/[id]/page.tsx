@@ -34,7 +34,7 @@ export default async function CharacterPage({ params, searchParams }: Props) {
       <div className="flex-1 overflow-y-auto scrollbar-thin pb-32">
         {/* Hero portrait with cinematic name overlay */}
         <div className="relative">
-          <div className="relative aspect-[4/5] w-full overflow-hidden">
+          <div className="relative aspect-square w-full overflow-hidden">
             <Image
               src={character.portrait}
               alt={character.name}

@@ -127,6 +127,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
   const [hints, setHints] = useState<[string, string] | null>(initialHints);
   const [endTransition, setEndTransition] = useState<"chat" | "fading" | "reflecting" | "summary">("chat");
   const [endReason, setEndReason] = useState<"natural" | "manual">("natural");
+  const [inputMode, setInputMode] = useState<"voice" | "text">("voice");
 
   const [playingIdx, setPlayingIdx] = useState<number | null>(null);
   const [loadingAudioIdx, setLoadingAudioIdx] = useState<number | null>(null);
@@ -544,7 +545,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       {!ended && !loading && hints && (
         <div
           key={`hints-${turnsUsed}`}
-          className="space-y-2 px-4 pb-3 animate-fade-in"
+          className="relative z-10 space-y-2 px-4 pb-3 animate-fade-in"
         >
           <p className="pl-1 text-[11px] uppercase tracking-[0.28em] text-slate-500">
             Try saying
@@ -561,47 +562,87 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         </div>
       )}
 
-      <form
-        className="flex items-end gap-3 border-t border-white/5 bg-slate-950/80 px-4 py-4 backdrop-blur"
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage(input);
-        }}
-      >
-        <div className="flex-1 rounded-3xl border border-white/10 bg-white/5 focus-within:border-accent-400 focus-within:bg-white/8">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(input);
-              }
+      {inputMode === "voice" ? (
+        <div className="relative bg-slate-950/85 px-4 pb-7 pt-7 backdrop-blur">
+          <div className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-b from-transparent to-slate-950/85" />
+          <div className="flex flex-col items-center gap-3">
+            <VoiceRecorder
+              size="lg"
+              disabled={loading}
+              onTranscribed={(t) => sendMessage(t)}
+            />
+            <p className="text-[12px] tracking-wide text-slate-400">
+              Tap to speak
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setInputMode("text")}
+            disabled={loading}
+            className="absolute bottom-6 right-4 inline-flex h-10 items-center gap-1.5 rounded-full border border-white/12 bg-white/5 px-3.5 text-[12px] font-medium text-slate-300 backdrop-blur transition hover:bg-white/10 hover:text-white disabled:opacity-50"
+            aria-label="Type instead"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2Zm0 12H4V7h16v10Zm-7-2h-2v-2h2v2Zm0-3h-2v-2h2v2Zm-3 3H8v-2h2v2Zm-3 0H5v-2h2v2Zm9 0h-2v-2h2v2Zm3 0h-2v-2h2v2Zm0-3h-2v-2h2v2Zm-3 0h-2v-2h2v2Zm-6-3H5V8h2v2Zm3 0H8V8h2v2Zm3 0h-2V8h2v2Zm3 0h-2V8h2v2Zm3 0h-2V8h2v2Z" />
+            </svg>
+            Type
+          </button>
+        </div>
+      ) : (
+        <form
+          className="relative bg-slate-950/85 px-4 pb-4 pt-3 backdrop-blur"
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage(input);
+          }}
+        >
+          <div className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-b from-transparent to-slate-950/85" />
+          <button
+            type="button"
+            onClick={() => {
+              setInput("");
+              setInputMode("voice");
             }}
             disabled={loading}
-            placeholder="What do you say?"
-            rows={1}
-            className="block max-h-32 w-full resize-none bg-transparent px-4 py-4 text-[16px] text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
-          />
-        </div>
-        {input.trim() ? (
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)] transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
-            title="Send"
+            className="mb-2 inline-flex h-8 items-center gap-1.5 rounded-full border border-white/12 bg-white/5 px-3 text-[12px] font-medium text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
+            aria-label="Back to voice"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 11.5 21 3l-8.5 18-2-7.5L3 11.5Z" />
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
             </svg>
+            Voice
           </button>
-        ) : (
-          <VoiceRecorder
-            disabled={loading}
-            onTranscribed={(t) => sendMessage(t)}
-          />
-        )}
-      </form>
+          <div className="flex items-end gap-3">
+            <div className="flex-1 rounded-3xl border border-white/10 bg-white/5 focus-within:border-accent-400 focus-within:bg-white/8">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage(input);
+                  }
+                }}
+                disabled={loading}
+                autoFocus
+                placeholder="What do you say?"
+                rows={1}
+                className="block max-h-32 w-full resize-none bg-transparent px-4 py-4 text-[16px] text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)] transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
+              title="Send"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 11.5 21 3l-8.5 18-2-7.5L3 11.5Z" />
+              </svg>
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

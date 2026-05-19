@@ -5,9 +5,14 @@ import { useRef, useState } from "react";
 type Props = {
   disabled?: boolean;
   onTranscribed: (text: string) => void;
+  size?: "sm" | "lg";
 };
 
-export default function VoiceRecorder({ disabled, onTranscribed }: Props) {
+export default function VoiceRecorder({
+  disabled,
+  onTranscribed,
+  size = "sm",
+}: Props) {
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,33 +70,59 @@ export default function VoiceRecorder({ disabled, onTranscribed }: Props) {
         type="button"
         disabled={disabled || processing}
         onClick={recording ? stop : start}
-        className={`relative inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+        className={`relative inline-flex shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+          size === "lg" ? "h-24 w-24" : "h-14 w-14"
+        } ${
           recording
-            ? "bg-rose-500 text-white shadow-[0_0_0_6px_rgba(244,63,94,0.25)]"
+            ? size === "lg"
+              ? "bg-rose-500 text-white shadow-[0_0_0_10px_rgba(244,63,94,0.22)]"
+              : "bg-rose-500 text-white shadow-[0_0_0_6px_rgba(244,63,94,0.25)]"
             : processing
             ? "bg-accent-500/80 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)]"
+            : size === "lg"
+            ? "bg-accent-500 text-white shadow-[0_20px_60px_-12px_rgba(139,92,246,0.7)] ring-4 ring-accent-500/25 ring-offset-4 ring-offset-slate-950 hover:bg-accent-400"
             : "bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.75)] ring-2 ring-accent-500/30 ring-offset-2 ring-offset-slate-950 hover:bg-accent-400"
         } disabled:cursor-not-allowed disabled:opacity-40`}
         title={recording ? "Stop" : "Record voice"}
       >
         {processing ? (
-          <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
+          <svg
+            className={`animate-spin ${size === "lg" ? "h-9 w-9" : "h-6 w-6"}`}
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity=".2" strokeWidth="3" />
             <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
           </svg>
         ) : recording ? (
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            className={size === "lg" ? "h-8 w-8" : "h-5 w-5"}
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <rect x="6" y="6" width="12" height="12" rx="2" />
           </svg>
         ) : (
-          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            className={size === "lg" ? "h-9 w-9" : "h-6 w-6"}
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
           </svg>
         )}
         {recording && (
-          <span className="absolute -top-0.5 -right-0.5 inline-flex h-3 w-3">
+          <span
+            className={`absolute inline-flex ${
+              size === "lg" ? "-top-1 right-2 h-4 w-4" : "-top-0.5 -right-0.5 h-3 w-3"
+            }`}
+          >
             <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-rose-400 opacity-75" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
+            <span
+              className={`relative inline-flex rounded-full bg-rose-500 ${
+                size === "lg" ? "h-4 w-4" : "h-3 w-3"
+              }`}
+            />
           </span>
         )}
       </button>
