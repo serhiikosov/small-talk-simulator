@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { Character } from "@/lib/characters";
@@ -235,6 +236,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     setError(null);
 
     const nextMessages: Message[] = [...messages, { role: "user", text: clean }];
+    const modelReplyIdx = nextMessages.length;
     setMessages(nextMessages);
     setInput("");
     setHints(null);
@@ -256,6 +258,29 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Chat error");
+
+      // Pre-fetch the TTS so text + audio appear together. Loader stays
+      // visible during this fetch; on cache hit playMessage skips the
+      // network call and plays immediately when useEffect fires.
+      try {
+        const ttsRes = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: data.reply,
+            voice: character.voice,
+          }),
+        });
+        if (ttsRes.ok) {
+          const blob = await ttsRes.blob();
+          audioCacheRef.current.set(
+            modelReplyIdx,
+            URL.createObjectURL(blob),
+          );
+        }
+      } catch {
+        // ignore — message still reveals, just without preloaded audio
+      }
 
       const newInterest = Math.max(0, Math.min(100, interest + data.interestDelta));
       setInterest(newInterest);
@@ -321,9 +346,20 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">
           {headerTitle}
         </p>
-        <p className="text-sm font-medium text-white">
-          {character.avatar} {character.name}, {character.age}
-        </p>
+        <div className="mt-0.5 flex items-center justify-center gap-1.5">
+          <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full ring-1 ring-white/15">
+            <Image
+              src={character.portrait}
+              alt={character.name}
+              fill
+              sizes="20px"
+              className="object-cover"
+            />
+          </div>
+          <span className="text-sm font-medium text-white">
+            {character.name}, {character.age}
+          </span>
+        </div>
       </div>
       <div className="justify-self-end">
         {endTransition === "chat" ? (
@@ -391,13 +427,25 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       {header}
       <InterestBar value={interest} />
 
-      <div className="flex items-center justify-between px-5 pb-3 text-[12px] text-slate-400">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          {character.name} online
-        </span>
-        <span className="rounded-full bg-white/5 px-2.5 py-1">
-          replies left: <span className="font-mono text-slate-200">{Math.max(0, turnsLeft)}</span>/{MAX_USER_TURNS}
+      <div className="flex items-center justify-between gap-3 px-5 pb-3 text-[10px] uppercase tracking-[0.22em] text-slate-500">
+        <span className="truncate">{character.shortDescription}</span>
+        <span className="inline-flex items-center gap-1.5">
+          {Array.from({ length: MAX_USER_TURNS }).map((_, i) => {
+            const filled = i < turnsUsed;
+            const active = i === turnsUsed && !ended;
+            return (
+              <span
+                key={i}
+                className={`block h-1.5 w-1.5 rounded-full transition ${
+                  filled
+                    ? "bg-coral"
+                    : active
+                    ? "bg-white/40"
+                    : "bg-white/10"
+                }`}
+              />
+            );
+          })}
         </span>
       </div>
 
@@ -415,8 +463,14 @@ export default function TextVoiceChat({ character }: { character: Character }) {
               className={`flex ${isUser ? "justify-end" : "justify-start"} animate-fade-in`}
             >
               {!isUser && (
-                <div className="mr-2 mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-base">
-                  {character.avatar}
+                <div className="relative mr-2 mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15">
+                  <Image
+                    src={character.portrait}
+                    alt={character.name}
+                    fill
+                    sizes="36px"
+                    className="object-cover"
+                  />
                 </div>
               )}
               <div
@@ -461,8 +515,14 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         })}
         {loading && (
           <div className="flex justify-start animate-fade-in">
-            <div className="mr-2 mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-base">
-              {character.avatar}
+            <div className="relative mr-2 mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15">
+              <Image
+                src={character.portrait}
+                alt={character.name}
+                fill
+                sizes="36px"
+                className="object-cover"
+              />
             </div>
             <div className="rounded-2xl rounded-bl-md bg-white/10 px-4 py-3">
               <span className="inline-flex items-center gap-1">
@@ -486,8 +546,8 @@ export default function TextVoiceChat({ character }: { character: Character }) {
           key={`hints-${turnsUsed}`}
           className="space-y-2 px-4 pb-3 animate-fade-in"
         >
-          <p className="pl-1 text-[11px] uppercase tracking-widest text-slate-500">
-            💡 Suggestions
+          <p className="pl-1 text-[11px] uppercase tracking-[0.28em] text-slate-500">
+            Try saying
           </p>
           {hints.map((hint, i) => (
             <button
@@ -519,7 +579,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
               }
             }}
             disabled={loading}
-            placeholder="Type or speak…"
+            placeholder="What do you say?"
             rows={1}
             className="block max-h-32 w-full resize-none bg-transparent px-4 py-4 text-[16px] text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
           />

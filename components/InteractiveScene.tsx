@@ -373,59 +373,79 @@ export default function InteractiveScene({ character }: { character: Character }
 
         {/* End-of-branch overlay */}
         {phase === "end" && (
-          <div className="absolute inset-0 z-30 flex items-end overflow-y-auto bg-gradient-to-t from-black/95 via-black/75 to-black/40 p-4 backdrop-blur-[2px] animate-fade-in">
-            <div className="w-full rounded-2xl border border-white/10 bg-slate-900/95 p-4">
-              <p className="text-[10px] uppercase tracking-widest text-slate-400">
+          <div className="absolute inset-0 z-30 flex flex-col justify-end overflow-y-auto bg-gradient-to-t from-black/95 via-black/80 to-black/30 p-6 pb-5 backdrop-blur-[3px] animate-fade-in">
+            <div className="w-full animate-slide-up">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-coral">
                 Scene complete
               </p>
-              <p className="mt-2 text-[14px] leading-relaxed text-slate-200">
+              <p className="mt-3 font-serif text-[18px] leading-[1.4] text-white">
                 {endMessage(lastChoice)}
               </p>
-              <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
-                Keep going in chat where you pick the words — or wrap up and see what stood out.
-              </p>
 
-              <div className="mt-4 space-y-2">
+              <div className="mt-5 grid grid-cols-2 gap-2">
                 <Link
                   href={buildContinueChatHref(character.id, lastChoice)}
-                  className="flex items-center justify-center gap-2 rounded-full bg-accent-500 px-4 py-3 text-[14px] font-semibold text-white shadow-[0_10px_30px_-12px_rgba(139,92,246,0.65)] transition active:scale-[0.98] hover:bg-accent-400"
+                  className="group relative flex flex-col items-start justify-between gap-3 overflow-hidden rounded-2xl bg-accent-500 p-4 text-left transition active:scale-[0.98] hover:bg-accent-400"
                 >
-                  Continue in chat
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
+                  <span className="text-[11px] uppercase tracking-[0.18em] text-white/70">
+                    Go deeper
+                  </span>
+                  <span className="flex w-full items-center justify-between">
+                    <span className="text-[15px] font-semibold leading-tight text-white">
+                      Continue<br />in chat
+                    </span>
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 transition group-hover:translate-x-0.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M5 12h14M13 5l7 7-7 7"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </span>
                 </Link>
                 <Link
                   href={`/simulation/${character.id}/summary`}
-                  className="flex items-center justify-center gap-2 rounded-full border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-[14px] font-medium text-rose-300 transition active:scale-[0.98] hover:bg-rose-500/20 hover:text-rose-200"
+                  className="group relative flex flex-col items-start justify-between gap-3 overflow-hidden rounded-2xl border border-coral/40 bg-coral/10 p-4 text-left transition active:scale-[0.98] hover:bg-coral/20"
                 >
-                  Finish — see summary
+                  <span className="text-[11px] uppercase tracking-[0.18em] text-coral/80">
+                    Reflect
+                  </span>
+                  <span className="flex w-full items-center justify-between">
+                    <span className="text-[15px] font-semibold leading-tight text-coral">
+                      See the<br />summary
+                    </span>
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-coral/20 text-coral">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2 14.6 8.6 22 9.2l-5.6 4.8 1.7 7.3L12 17.8l-6.1 3.5 1.7-7.3L2 9.2l7.4-.6L12 2Z" />
+                      </svg>
+                    </span>
+                  </span>
                 </Link>
               </div>
 
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex items-center justify-center gap-1.5 text-[12px]">
                 {lastChoice && (
-                  <button
-                    onClick={tryOther}
-                    className="flex-1 rounded-full border border-white/10 px-3 py-2 text-[12px] font-medium text-slate-300 transition hover:bg-white/5 hover:text-white active:scale-[0.98]"
-                  >
-                    {lastChoice.level === 2 ? "Other reply" : "Other path"}
-                  </button>
+                  <>
+                    <button
+                      onClick={tryOther}
+                      className="rounded-full px-3 py-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
+                    >
+                      {lastChoice.level === 2 ? "↺ Other reply" : "↺ Other path"}
+                    </button>
+                    <span className="text-slate-700">·</span>
+                  </>
                 )}
                 <button
                   onClick={restart}
-                  className="flex-1 rounded-full border border-white/10 px-3 py-2 text-[12px] font-medium text-slate-300 transition hover:bg-white/5 hover:text-white active:scale-[0.98]"
+                  className="rounded-full px-3 py-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
                 >
-                  Start over
+                  Restart from intro
                 </button>
               </div>
-
-              <Link
-                href="/"
-                className="mt-2 block rounded-full px-3 py-2 text-center text-[12px] font-medium text-slate-500 transition hover:text-slate-300"
-              >
-                ← Back to characters
-              </Link>
             </div>
           </div>
         )}

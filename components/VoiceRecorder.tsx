@@ -67,8 +67,10 @@ export default function VoiceRecorder({ disabled, onTranscribed }: Props) {
         onClick={recording ? stop : start}
         className={`relative inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
           recording
-            ? "bg-rose-500 text-white shadow-[0_0_0_5px_rgba(244,63,94,0.25)]"
-            : "bg-white/10 text-slate-200 hover:bg-white/15"
+            ? "bg-rose-500 text-white shadow-[0_0_0_6px_rgba(244,63,94,0.25)]"
+            : processing
+            ? "bg-accent-500/80 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)]"
+            : "bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.75)] ring-2 ring-accent-500/30 ring-offset-2 ring-offset-slate-950 hover:bg-accent-400"
         } disabled:cursor-not-allowed disabled:opacity-40`}
         title={recording ? "Stop" : "Record voice"}
       >
