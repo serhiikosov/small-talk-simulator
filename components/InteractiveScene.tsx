@@ -382,47 +382,47 @@ export default function InteractiveScene({ character }: { character: Character }
                 {endMessage(lastChoice)}
               </p>
 
-              <div className="mt-5 grid grid-cols-2 gap-2">
+              <div className="mt-5 space-y-2">
                 <Link
                   href={buildContinueChatHref(character.id, lastChoice)}
-                  className="group relative flex flex-col items-start justify-between gap-3 overflow-hidden rounded-2xl bg-accent-500 p-4 text-left transition active:scale-[0.98] hover:bg-accent-400"
+                  className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-accent-500 px-5 py-3.5 text-left shadow-[0_12px_40px_-12px_rgba(139,92,246,0.6)] transition active:scale-[0.98] hover:bg-accent-400"
                 >
-                  <span className="text-[11px] uppercase tracking-[0.18em] text-white/70">
-                    Go deeper
+                  <span>
+                    <span className="block text-[10px] uppercase tracking-[0.22em] text-white/70">
+                      Go deeper
+                    </span>
+                    <span className="mt-0.5 block text-[15px] font-semibold leading-tight text-white">
+                      Continue in chat
+                    </span>
                   </span>
-                  <span className="flex w-full items-center justify-between">
-                    <span className="text-[15px] font-semibold leading-tight text-white">
-                      Continue<br />in chat
-                    </span>
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 transition group-hover:translate-x-0.5">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M5 12h14M13 5l7 7-7 7"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </span>
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 transition group-hover:translate-x-0.5">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M5 12h14M13 5l7 7-7 7"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </span>
                 </Link>
                 <Link
                   href={`/simulation/${character.id}/summary`}
-                  className="group relative flex flex-col items-start justify-between gap-3 overflow-hidden rounded-2xl border border-coral/40 bg-coral/10 p-4 text-left transition active:scale-[0.98] hover:bg-coral/20"
+                  className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl border border-white/15 bg-white/5 px-5 py-3.5 text-left transition active:scale-[0.98] hover:bg-white/10"
                 >
-                  <span className="text-[11px] uppercase tracking-[0.18em] text-coral/80">
-                    Reflect
+                  <span>
+                    <span className="block text-[10px] uppercase tracking-[0.22em] text-slate-400">
+                      Reflect
+                    </span>
+                    <span className="mt-0.5 block text-[15px] font-semibold leading-tight text-white">
+                      See the summary
+                    </span>
                   </span>
-                  <span className="flex w-full items-center justify-between">
-                    <span className="text-[15px] font-semibold leading-tight text-coral">
-                      See the<br />summary
-                    </span>
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-coral/20 text-coral">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2 14.6 8.6 22 9.2l-5.6 4.8 1.7 7.3L12 17.8l-6.1 3.5 1.7-7.3L2 9.2l7.4-.6L12 2Z" />
-                      </svg>
-                    </span>
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-200">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2 14.6 8.6 22 9.2l-5.6 4.8 1.7 7.3L12 17.8l-6.1 3.5 1.7-7.3L2 9.2l7.4-.6L12 2Z" />
+                    </svg>
                   </span>
                 </Link>
               </div>
