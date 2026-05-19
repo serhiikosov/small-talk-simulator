@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
         parts: [
           {
             text:
-              "Transcribe the following audio in Ukrainian (or the language spoken). " +
+              "Transcribe the following audio verbatim in the original language that is spoken. " +
+              "Do NOT translate — keep the same language as the speaker. " +
               "Return ONLY the transcribed text, with no quotes, prefixes, or explanations.",
           },
           { inline_data: { mime_type: mimeType, data: base64 } },
