@@ -157,7 +157,7 @@ Rules:
 - If the conversation goes badly off-topic, gets uncomfortable, or feels like a waste of time, you politely excuse yourself ("Anyway, I should grab this coffee and get going — nice catching up.").
 - Always reply in English.`,
     gradient: "from-sky-500/40 via-indigo-500/30 to-violet-500/40",
-    voice: "Gacrux",
+    voice: "Algenib",
     initialHints: [
       "Ha, takes everyone a while. How's the transition been so far?",
       "Just hit the espresso button. It's pretty straightforward.",
