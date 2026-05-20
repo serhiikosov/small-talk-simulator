@@ -5,12 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { Character } from "@/lib/characters";
-import { getSampleSession } from "@/lib/summary";
+import { buildLiveSession } from "@/lib/summary";
 import InterestBar from "./InterestBar";
 import VoiceRecorder from "./VoiceRecorder";
 import ConversationSummary from "./ConversationSummary";
 
-type Message = { role: "user" | "model"; text: string };
+type Message = {
+  role: "user" | "model";
+  text: string;
+  interestLevel?: number;
+};
 type Branch = "positive" | "negative";
 
 const MAX_USER_TURNS = 3;
@@ -26,7 +30,11 @@ function buildInitialMessages(
   b2: Branch | null,
 ): Message[] {
   const msgs: Message[] = [
-    { role: "model", text: lindaLine(character, "intro", character.firstLine) },
+    {
+      role: "model",
+      text: lindaLine(character, "intro", character.firstLine),
+      interestLevel: 50,
+    },
   ];
   if (!fromInteractive || !b1) return msgs;
 
@@ -35,6 +43,7 @@ function buildInitialMessages(
     msgs.push({
       role: "model",
       text: lindaLine(character, "positive", character.positiveReply),
+      interestLevel: 65,
     });
     if (b2 && character.level2) {
       msgs.push({
@@ -44,6 +53,7 @@ function buildInitialMessages(
           character.level2.connectorVideo,
           "Do you have anything like that?",
         ),
+        interestLevel: 65,
       });
       msgs.push({ role: "user", text: character.level2.options[b2] });
       msgs.push({
@@ -53,6 +63,7 @@ function buildInitialMessages(
           character.level2.videos[b2],
           character.level2.replies[b2],
         ),
+        interestLevel: b2 === "positive" ? 78 : 38,
       });
     }
   } else {
@@ -60,6 +71,7 @@ function buildInitialMessages(
     msgs.push({
       role: "model",
       text: lindaLine(character, "negative", character.negativeReply),
+      interestLevel: 28,
     });
     if (character.negativeFollowup) {
       msgs.push({
@@ -69,6 +81,7 @@ function buildInitialMessages(
           character.negativeFollowup.video,
           character.negativeFollowup.reply,
         ),
+        interestLevel: 25,
       });
     }
   }
@@ -285,7 +298,10 @@ export default function TextVoiceChat({ character }: { character: Character }) {
 
       const newInterest = Math.max(0, Math.min(100, interest + data.interestDelta));
       setInterest(newInterest);
-      setMessages((m) => [...m, { role: "model", text: data.reply }]);
+      setMessages((m) => [
+        ...m,
+        { role: "model", text: data.reply, interestLevel: newInterest },
+      ]);
       setTurnsUsed((t) => t + 1);
 
       const willEnd =
@@ -385,7 +401,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         {header}
         <div className="flex min-h-0 flex-1 flex-col animate-fade-in-slow">
           <ConversationSummary
-            session={getSampleSession(character.id)}
+            session={buildLiveSession(messages)}
             characterId={character.id}
             characterName={character.name}
             onRestart={restartConversation}

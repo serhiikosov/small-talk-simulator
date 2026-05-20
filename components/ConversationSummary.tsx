@@ -92,7 +92,7 @@ function HeroPoster({
         <span className="text-coral">”</span>
       </blockquote>
       <div className="mt-6 h-px w-10 bg-coral/40" />
-      <p className="mt-5 font-serif text-[14px] italic leading-relaxed text-slate-400">
+      <p className="mt-5 font-serif text-[16px] italic leading-[1.55] text-slate-300">
         {hero.lesson}
       </p>
     </section>
@@ -144,9 +144,30 @@ function CurveSection({
     y: PAD_Y + (1 - p.value / 100) * innerH,
   }));
 
-  const pathD = coords
-    .map((c, i) => `${i === 0 ? "M" : "L"} ${c.x.toFixed(2)} ${c.y.toFixed(2)}`)
-    .join(" ");
+  // Smooth Catmull-Rom interpolation rendered as a series of cubic beziers
+  // so the line glides between data points rather than zig-zagging.
+  function smoothPathD(pts: { x: number; y: number }[]): string {
+    if (pts.length === 0) return "";
+    if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+    if (pts.length === 2)
+      return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+    const tension = 0.45;
+    let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] ?? pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] ?? p2;
+      const cp1x = p1.x + ((p2.x - p0.x) * tension) / 2;
+      const cp1y = p1.y + ((p2.y - p0.y) * tension) / 2;
+      const cp2x = p2.x - ((p3.x - p1.x) * tension) / 2;
+      const cp2y = p2.y - ((p3.y - p1.y) * tension) / 2;
+      d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    }
+    return d;
+  }
+
+  const pathD = smoothPathD(coords);
 
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -167,7 +188,7 @@ function CurveSection({
       className="animate-block-in"
       style={{ animationDelay: "160ms" }}
     >
-      <p className="font-serif text-[14px] italic leading-relaxed text-slate-400">
+      <p className="font-serif text-[16px] italic leading-[1.55] text-slate-300">
         {summary}
       </p>
 
@@ -199,10 +220,11 @@ function CurveSection({
           )}
 
           <path
+            className="curve-line"
             d={pathD}
             fill="none"
             stroke="url(#curveGradient)"
-            strokeWidth="2"
+            strokeWidth="2.25"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -210,16 +232,21 @@ function CurveSection({
           {coords.map((c, i) => {
             const isPeak = points[i].value >= 55;
             const color = isPeak ? CORAL : MUTED;
+            const delay = 600 + i * 80;
             return (
               <g key={i}>
                 <circle
+                  className="curve-dot"
                   cx={c.x}
                   cy={c.y}
-                  r={activeIdx === i ? 4.5 : 3}
+                  r={activeIdx === i ? 5 : 3.25}
                   fill={color}
                   stroke="#0a0a14"
                   strokeWidth="1.5"
-                  style={{ transition: "r 0.15s" }}
+                  style={{
+                    transition: "r 0.15s",
+                    animationDelay: `${delay}ms`,
+                  }}
                 />
                 <circle
                   cx={c.x}
@@ -361,7 +388,7 @@ function InsightRow({
       >
         {glyph}
       </span>
-      <p className="flex-1 text-[14px] leading-snug text-slate-200">
+      <p className="flex-1 text-[16px] leading-snug text-slate-200">
         {firstSentence(item.comment)}
       </p>
       <span className="mt-0.5 text-[16px] leading-none text-slate-600 transition group-hover:text-slate-300">
@@ -438,11 +465,11 @@ function TranscriptSection({
                 >
                   {isUser ? "You" : characterName}
                 </p>
-                <p className="mt-1 text-[14px] leading-relaxed text-slate-100">
+                <p className="mt-1 text-[16px] leading-relaxed text-slate-100">
                   {m.text}
                 </p>
                 {annotation && (
-                  <p className="mt-2 text-[12.5px] italic leading-snug text-coral/90">
+                  <p className="mt-2 text-[14px] italic leading-snug text-coral/90">
                     <span className="mr-1.5">↳</span>
                     {annotation}
                   </p>

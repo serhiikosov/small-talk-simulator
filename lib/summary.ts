@@ -234,3 +234,164 @@ export function getSampleSession(characterId: string): Session {
 
 // Legacy export for any imports that still expect a default.
 export const SAMPLE_SESSION = LINDA_SAMPLE_SESSION;
+
+/* ───────── Dynamic session built from real chat state ───────── */
+
+type ChatMessage = {
+  role: "user" | "model";
+  text: string;
+  interestLevel?: number;
+};
+
+function describeTrajectory(values: number[]): string {
+  if (values.length < 2) return "A single beat — not enough back-and-forth to read the shape.";
+  const start = values[0];
+  const end = values[values.length - 1];
+  const peak = Math.max(...values);
+  const trough = Math.min(...values);
+  const drop = peak - trough;
+  const delta = end - start;
+  if (Math.abs(delta) < 8 && drop < 15)
+    return "A steady, level conversation — neither warming nor cooling sharply.";
+  if (delta > 12)
+    return "Warmed up as you went — they leaned in more by the end than at the start.";
+  if (delta < -12 && drop > 25)
+    return "A warm opening that climbed gently, then dropped sharply and never quite recovered.";
+  if (delta < -12)
+    return "Things cooled over the course of the conversation — small misses adding up.";
+  if (drop > 20)
+    return "Mostly even, but with a clear dip you had to recover from.";
+  return "A measured exchange with some peaks and dips along the way.";
+}
+
+function genericLesson(values: number[]): { quote: string; lesson: string } {
+  if (values.length < 2) {
+    return {
+      quote: "Not much happened — the conversation barely got off the ground.",
+      lesson: "Real small talk needs a few exchanges to find its footing. Stay in it a turn longer next time.",
+    };
+  }
+  const finalDelta = values[values.length - 1] - values[0];
+  if (finalDelta >= 12) {
+    return {
+      quote: "By the end, they were warmer than when you started.",
+      lesson: "Curiosity that builds on what the other person just said is the cheat code. Keep doing that.",
+    };
+  }
+  if (finalDelta <= -12) {
+    return {
+      quote: "Somewhere mid-conversation the temperature dropped.",
+      lesson: "Watch for the moment after someone shares something personal — your next line sets the tone. Match the register they just opened.",
+    };
+  }
+  return {
+    quote: "A measured exchange — neither warm nor cold.",
+    lesson: "Polite is fine, but polite is also forgettable. Risk a slightly more specific question next time.",
+  };
+}
+
+function pickInsights(
+  transcript: TranscriptEntry[],
+  values: number[],
+): { whatWorked: WhatItem[]; worthNoticing: WhatItem[] } {
+  // For each model msg with interestLevel, find delta from previous and the preceding user line.
+  const beats: { idx: number; delta: number; userIdx: number; userText: string }[] = [];
+  let prev = values[0] ?? 50;
+  for (let i = 0; i < transcript.length; i++) {
+    const m = transcript[i];
+    if (m.speaker === "model" && m.interestLevel !== undefined) {
+      if (i === 0) {
+        prev = m.interestLevel;
+        continue;
+      }
+      let userIdx = -1;
+      let userText = "";
+      for (let j = i - 1; j >= 0; j--) {
+        if (transcript[j].speaker === "user") {
+          userIdx = j;
+          userText = transcript[j].text;
+          break;
+        }
+      }
+      if (userIdx >= 0) {
+        beats.push({ idx: i, delta: m.interestLevel - prev, userIdx, userText });
+      }
+      prev = m.interestLevel;
+    }
+  }
+  const positive = [...beats].filter((b) => b.delta > 0).sort((a, b) => b.delta - a.delta);
+  const negative = [...beats].filter((b) => b.delta < 0).sort((a, b) => a.delta - b.delta);
+
+  function workedComment(idx: number, delta: number): string {
+    if (idx === 0) {
+      return delta > 12
+        ? "They visibly opened up here — your strongest moment in the conversation."
+        : "A clean little lift. Felt natural, not forced.";
+    }
+    return "A second moment that nudged the temperature up — the pattern is more important than the size.";
+  }
+
+  function noticeComment(idx: number, delta: number): string {
+    if (idx === 0) {
+      return delta < -15
+        ? "The sharp drop. Replay what came right before — that's where the misread happened."
+        : "A small cool-down. Worth re-reading what kind of question you led with.";
+    }
+    return "Another dip later in the conversation. Same shape repeating — small misses adding up.";
+  }
+
+  // Dedupe by user line so the same sentence doesn't appear twice in a list.
+  const seenLines = new Set<string>();
+  const pickUnique = (items: typeof beats, max: number) => {
+    const out: typeof beats = [];
+    for (const b of items) {
+      if (seenLines.has(b.userText)) continue;
+      seenLines.add(b.userText);
+      out.push(b);
+      if (out.length >= max) break;
+    }
+    return out;
+  };
+
+  const whatWorked: WhatItem[] = pickUnique(positive, 2).map((b, i) => ({
+    line: b.userText,
+    comment: workedComment(i, b.delta),
+    transcriptIndex: b.userIdx,
+  }));
+
+  const worthNoticing: WhatItem[] = pickUnique(negative, 2).map((b, i) => ({
+    line: b.userText,
+    comment: noticeComment(i, b.delta),
+    transcriptIndex: b.userIdx,
+  }));
+
+  return { whatWorked, worthNoticing };
+}
+
+export function buildLiveSession(messages: ChatMessage[]): Session {
+  const now = Date.now();
+  const transcript: TranscriptEntry[] = messages.map((m, i) => ({
+    speaker: m.role,
+    text: m.text,
+    timestamp: now + i * 1000,
+    interestLevel: m.interestLevel,
+  }));
+
+  const values = transcript
+    .filter((t) => t.speaker === "model" && t.interestLevel !== undefined)
+    .map((t) => t.interestLevel as number);
+
+  const lesson = genericLesson(values);
+  const { whatWorked, worthNoticing } = pickInsights(transcript, values);
+
+  return {
+    transcript,
+    analysis: {
+      heroMoment: lesson,
+      curveSummary: describeTrajectory(values),
+      whatWorked,
+      worthNoticing,
+      transcriptAnnotations: {},
+    },
+  };
+}
