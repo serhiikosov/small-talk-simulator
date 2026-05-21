@@ -4,21 +4,23 @@ export default function InterestBar({ value }: { value: number }) {
   const clamped = Math.max(0, Math.min(100, value));
   const tone =
     clamped >= 65
-      ? { bar: "from-emerald-400 to-emerald-500", emoji: "😊", label: "Engaged" }
+      ? { bar: "from-emerald-400 to-emerald-500", label: "Engaged" }
       : clamped >= 35
-      ? { bar: "from-amber-400 to-amber-500", emoji: "🙂", label: "Neutral" }
-      : { bar: "from-rose-400 to-rose-500", emoji: "😐", label: "Slipping" };
+      ? { bar: "from-amber-400 to-amber-500", label: "Neutral" }
+      : { bar: "from-rose-400 to-rose-500", label: "Slipping" };
 
   return (
-    <div className="px-5 pb-6">
-      <div className="flex items-center justify-between text-[12px]">
-        <span className="flex items-center gap-1.5 uppercase tracking-widest text-slate-400">
-          <span className="text-base">{tone.emoji}</span>
-          <span>Interest</span>
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--text-secondary)]">
+          Interest
         </span>
-        <span className="font-mono text-slate-200">{clamped}<span className="text-slate-500">/100</span></span>
+        <span className="font-mono text-[12px] font-semibold text-[color:var(--text-secondary)]">
+          {clamped}
+          <span className="text-[color:var(--text-quaternary)]">/100</span>
+        </span>
       </div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--surface-soft)]">
         <div
           className={`h-full rounded-full bg-gradient-to-r ${tone.bar} transition-[width] duration-500`}
           style={{ width: `${clamped}%` }}

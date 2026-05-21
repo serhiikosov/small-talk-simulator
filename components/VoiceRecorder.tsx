@@ -71,23 +71,23 @@ export default function VoiceRecorder({
         disabled={disabled || processing}
         onClick={recording ? stop : start}
         className={`relative inline-flex shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
-          size === "lg" ? "h-24 w-24" : "h-14 w-14"
+          size === "lg" ? "h-20 w-20" : "h-14 w-14"
         } ${
           recording
             ? size === "lg"
-              ? "bg-rose-500 text-white shadow-[0_0_0_10px_rgba(244,63,94,0.22)]"
-              : "bg-rose-500 text-white shadow-[0_0_0_6px_rgba(244,63,94,0.25)]"
+              ? "bg-rose-500 text-white shadow-[0_0_0_10px_rgba(244,63,94,0.18)]"
+              : "bg-rose-500 text-white shadow-[0_0_0_6px_rgba(244,63,94,0.18)]"
             : processing
-            ? "bg-accent-500/80 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)]"
+            ? "bg-[color:var(--surface-accent-solid)]/80 text-white shadow-[0_10px_30px_-10px_rgba(108,92,231,0.55)]"
             : size === "lg"
-            ? "bg-accent-500 text-white shadow-[0_20px_60px_-12px_rgba(139,92,246,0.7)] ring-4 ring-accent-500/25 ring-offset-4 ring-offset-slate-950 hover:bg-accent-400"
-            : "bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.75)] ring-2 ring-accent-500/30 ring-offset-2 ring-offset-slate-950 hover:bg-accent-400"
+            ? "bg-[color:var(--surface-accent-solid)] text-white shadow-[0_18px_50px_-12px_rgba(108,92,231,0.55)] ring-4 ring-[color:var(--surface-accent-solid)]/15 ring-offset-4 ring-offset-[color:var(--surface-bg)] hover:opacity-95"
+            : "bg-[color:var(--surface-accent-solid)] text-white shadow-[0_10px_30px_-10px_rgba(108,92,231,0.55)] ring-2 ring-[color:var(--surface-accent-solid)]/20 ring-offset-2 ring-offset-[color:var(--surface-bg)] hover:opacity-95"
         } disabled:cursor-not-allowed disabled:opacity-40`}
         title={recording ? "Stop" : "Record voice"}
       >
         {processing ? (
           <svg
-            className={`animate-spin ${size === "lg" ? "h-9 w-9" : "h-6 w-6"}`}
+            className={`animate-spin ${size === "lg" ? "h-8 w-8" : "h-6 w-6"}`}
             viewBox="0 0 24 24"
             fill="none"
           >
@@ -96,7 +96,7 @@ export default function VoiceRecorder({
           </svg>
         ) : recording ? (
           <svg
-            className={size === "lg" ? "h-8 w-8" : "h-5 w-5"}
+            className={size === "lg" ? "h-7 w-7" : "h-5 w-5"}
             viewBox="0 0 24 24"
             fill="currentColor"
           >
@@ -104,7 +104,7 @@ export default function VoiceRecorder({
           </svg>
         ) : (
           <svg
-            className={size === "lg" ? "h-9 w-9" : "h-6 w-6"}
+            className={size === "lg" ? "h-8 w-8" : "h-6 w-6"}
             viewBox="0 0 24 24"
             fill="currentColor"
           >
@@ -127,7 +127,7 @@ export default function VoiceRecorder({
         )}
       </button>
       {error && (
-        <span className="absolute -top-7 right-0 whitespace-nowrap rounded-md bg-rose-500/20 px-2 py-0.5 text-[10px] text-rose-200">
+        <span className="absolute -top-7 right-0 whitespace-nowrap rounded-md bg-rose-500/15 px-2 py-0.5 text-[14px] text-rose-600">
           {error}
         </span>
       )}

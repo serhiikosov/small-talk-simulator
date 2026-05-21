@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConversationSummary from "@/components/ConversationSummary";
 import { getSampleSession } from "@/lib/summary";
+import { useUIPrefs } from "@/components/UIPrefs";
 
 export default function SummaryClient({
   characterId,
@@ -15,32 +15,34 @@ export default function SummaryClient({
   characterAvatar: string;
 }) {
   const router = useRouter();
+  const { chatEnabled } = useUIPrefs();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between px-5 pt-3 pb-2">
-        <Link
-          href={`/character/${characterId}`}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg text-white/90 transition hover:bg-white/15 active:scale-95"
-          aria-label="Back"
-        >
-          ←
-        </Link>
-        <div className="text-center">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">
+      <div className="flex flex-shrink-0 items-center gap-3 border-b border-[color:var(--border-subtle)] bg-[color:var(--surface-elevated)] px-4 py-3">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--surface-accent-tonal)] text-lg">
+          {characterAvatar}
+        </span>
+        <div className="min-w-0">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[color:var(--text-accent)] leading-none">
             Summary
           </p>
-          <p className="text-sm font-medium text-white">
-            {characterAvatar} {characterName}
+          <p className="mt-1 text-[15px] font-semibold leading-none text-[color:var(--text-primary)]">
+            {characterName}
           </p>
         </div>
-        <span className="w-9" />
       </div>
       <ConversationSummary
         session={getSampleSession(characterId)}
         characterId={characterId}
         characterName={characterName}
-        onRestart={() => router.push(`/simulation/${characterId}/text-voice`)}
+        onRestart={() =>
+          router.push(
+            chatEnabled
+              ? `/simulation/${characterId}/text-voice`
+              : `/simulation/${characterId}/interactive`,
+          )
+        }
       />
     </div>
   );

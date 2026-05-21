@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Character } from "@/lib/characters";
+import { useUIPrefs } from "./UIPrefs";
 
 type Phase =
   | "intro"
@@ -93,6 +94,7 @@ export default function InteractiveScene({ character }: { character: Character }
   const [captionsOn, setCaptionsOn] = useState(true);
   const [lastChoice, setLastChoice] = useState<LastChoice | null>(null);
   const [pendingChoice, setPendingChoice] = useState<"positive" | "negative" | null>(null);
+  const { chatEnabled } = useUIPrefs();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -210,6 +212,14 @@ export default function InteractiveScene({ character }: { character: Character }
     }
   }
 
+  function replayChoice() {
+    if (!lastChoice) return;
+    clearPending();
+    const level = lastChoice.level;
+    setLastChoice(null);
+    setPhase(level === 1 ? "choice-1" : "choice-2");
+  }
+
   function pick(level: 1 | 2, branch: "positive" | "negative") {
     if (pendingChoice) return;
     setPendingChoice(branch);
@@ -237,8 +247,8 @@ export default function InteractiveScene({ character }: { character: Character }
       : character.level2?.options.negative ?? "";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
-      <div className="relative flex-1 overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <div className="relative flex-1 overflow-hidden bg-black">
         {!videoFailed && displayScene && (
           <video
             ref={videoRef}
@@ -274,7 +284,7 @@ export default function InteractiveScene({ character }: { character: Character }
                 {displayText}
               </p>
             </div>
-            <p className="absolute inset-x-0 bottom-4 text-center text-[10px] uppercase tracking-widest text-white/40">
+            <p className="absolute inset-x-0 bottom-4 text-center text-[12px] uppercase tracking-widest text-white/40">
               placeholder · add {displayScene}.mp4
             </p>
           </div>
@@ -285,7 +295,7 @@ export default function InteractiveScene({ character }: { character: Character }
           <button
             type="button"
             onClick={() => setCaptionsOn((v) => !v)}
-            className={`absolute top-3 right-14 z-20 inline-flex h-9 items-center gap-1 rounded-full bg-black/60 px-2.5 text-[11px] font-bold text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
+            className={`absolute top-3 right-14 z-20 inline-flex h-9 items-center gap-1 rounded-full bg-black/60 px-2.5 text-[14px] font-bold text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
               captionsOn ? "" : "opacity-50"
             }`}
             aria-label={captionsOn ? "Hide captions" : "Show captions"}
@@ -322,7 +332,7 @@ export default function InteractiveScene({ character }: { character: Character }
             onClick={toggleMute}
             className="absolute inset-0 z-15 flex items-center justify-center bg-black/30 animate-fade-in"
           >
-            <span className="flex items-center gap-2 rounded-full bg-black/85 px-5 py-3 text-[13px] font-medium text-white shadow-xl backdrop-blur">
+            <span className="flex items-center gap-2 rounded-full bg-black/85 px-5 py-3 text-[14px] font-medium text-white shadow-xl backdrop-blur">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 9v6h4l5 5V4L7 9H3Zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z" />
               </svg>
@@ -343,7 +353,7 @@ export default function InteractiveScene({ character }: { character: Character }
         {/* Choice buttons (level 1 or 2) */}
         {isChoicePhase(phase) && choiceContext && (
           <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/95 via-black/75 to-transparent p-4 pt-20 animate-slide-up">
-            <p className="mb-1 px-1 text-[11px] uppercase tracking-widest text-white/70">
+            <p className="mb-1 px-1 text-[12px] uppercase tracking-widest text-white/70">
               {pendingChoice
                 ? "Selected…"
                 : choiceContext === 2
@@ -375,73 +385,107 @@ export default function InteractiveScene({ character }: { character: Character }
         {phase === "end" && (
           <div className="absolute inset-0 z-30 flex flex-col justify-end overflow-y-auto bg-gradient-to-t from-black/95 via-black/80 to-black/30 p-6 pb-5 backdrop-blur-[3px] animate-fade-in">
             <div className="w-full animate-slide-up">
-              <p className="text-[10px] uppercase tracking-[0.32em] text-coral">
+              <p className="text-[12px] uppercase tracking-[0.32em] text-coral">
                 Scene complete
               </p>
-              <p className="mt-3 font-serif text-[18px] leading-[1.4] text-white">
+              <p className="mt-3 text-[18px] leading-[1.4] text-white">
                 {endMessage(lastChoice)}
               </p>
 
               <div className="mt-5 space-y-2">
-                <Link
-                  href={buildContinueChatHref(character.id, lastChoice)}
-                  className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-accent-500 px-5 py-3.5 text-left shadow-[0_12px_40px_-12px_rgba(139,92,246,0.6)] transition active:scale-[0.98] hover:bg-accent-400"
-                >
-                  <span>
-                    <span className="block text-[10px] uppercase tracking-[0.22em] text-white/70">
-                      Go deeper
-                    </span>
-                    <span className="mt-0.5 block text-[15px] font-semibold leading-tight text-white">
-                      Continue in chat
-                    </span>
-                  </span>
-                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 transition group-hover:translate-x-0.5">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M5 12h14M13 5l7 7-7 7"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </Link>
-                <Link
-                  href={`/simulation/${character.id}/summary`}
-                  className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl border border-white/15 bg-white/5 px-5 py-3.5 text-left transition active:scale-[0.98] hover:bg-white/10"
-                >
-                  <span>
-                    <span className="block text-[10px] uppercase tracking-[0.22em] text-slate-400">
-                      Reflect
-                    </span>
-                    <span className="mt-0.5 block text-[15px] font-semibold leading-tight text-white">
+                {lastChoice?.branch === "negative" ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={replayChoice}
+                      className="group flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--surface-accent-solid)] px-5 text-white shadow-[0_12px_40px_-12px_rgba(108,92,231,0.6)] transition active:scale-[0.98] hover:opacity-95"
+                    >
+                      <span className="text-[16px] font-semibold leading-none">
+                        Try again
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
+                        <path
+                          d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <Link
+                      href={`/simulation/${character.id}/summary`}
+                      className="flex h-14 items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 text-white transition active:scale-[0.98] hover:bg-white/20"
+                    >
+                      <span className="text-[16px] font-semibold leading-none">
+                        See the summary
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                        <path d="M12 2 14.6 8.6 22 9.2l-5.6 4.8 1.7 7.3L12 17.8l-6.1 3.5 1.7-7.3L2 9.2l7.4-.6L12 2Z" />
+                      </svg>
+                    </Link>
+                  </>
+                ) : chatEnabled ? (
+                  <>
+                    <Link
+                      href={buildContinueChatHref(character.id, lastChoice)}
+                      className="group flex h-14 items-center justify-center gap-2 rounded-2xl bg-[color:var(--surface-accent-solid)] px-5 text-white shadow-[0_12px_40px_-12px_rgba(108,92,231,0.6)] transition active:scale-[0.98] hover:opacity-95"
+                    >
+                      <span className="text-[16px] font-semibold leading-none">
+                        Continue in chat
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white transition group-hover:translate-x-0.5">
+                        <path
+                          d="M5 12h14M13 5l7 7-7 7"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </Link>
+                    <Link
+                      href={`/simulation/${character.id}/summary`}
+                      className="flex h-14 items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 text-white transition active:scale-[0.98] hover:bg-white/20"
+                    >
+                      <span className="text-[16px] font-semibold leading-none">
+                        See the summary
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                        <path d="M12 2 14.6 8.6 22 9.2l-5.6 4.8 1.7 7.3L12 17.8l-6.1 3.5 1.7-7.3L2 9.2l7.4-.6L12 2Z" />
+                      </svg>
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href={`/simulation/${character.id}/summary`}
+                    className="group flex h-14 items-center justify-center gap-2 rounded-2xl bg-[color:var(--surface-accent-solid)] px-5 text-white shadow-[0_12px_40px_-12px_rgba(108,92,231,0.6)] transition active:scale-[0.98] hover:opacity-95"
+                  >
+                    <span className="text-[16px] font-semibold leading-none">
                       See the summary
                     </span>
-                  </span>
-                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-200">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white">
                       <path d="M12 2 14.6 8.6 22 9.2l-5.6 4.8 1.7 7.3L12 17.8l-6.1 3.5 1.7-7.3L2 9.2l7.4-.6L12 2Z" />
                     </svg>
-                  </span>
-                </Link>
+                  </Link>
+                )}
               </div>
 
-              <div className="mt-3 flex items-center justify-center gap-1.5 text-[12px]">
+              <div className="mt-3 flex items-center justify-center gap-1.5 text-[14px]">
                 {lastChoice && (
                   <>
                     <button
                       onClick={tryOther}
-                      className="rounded-full px-3 py-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
+                      className="rounded-full px-3 py-1.5 text-white/65 transition hover:bg-white/10 hover:text-white"
                     >
                       {lastChoice.level === 2 ? "↺ Other reply" : "↺ Other path"}
                     </button>
-                    <span className="text-slate-700">·</span>
+                    <span className="text-white/35">·</span>
                   </>
                 )}
                 <button
                   onClick={restart}
-                  className="rounded-full px-3 py-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
+                  className="rounded-full px-3 py-1.5 text-white/65 transition hover:bg-white/10 hover:text-white"
                 >
                   Restart from intro
                 </button>
@@ -498,10 +542,10 @@ function ChoiceButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`relative rounded-2xl border px-4 py-3 pr-11 text-left text-[16px] font-medium leading-snug text-white backdrop-blur transition active:scale-[0.98] disabled:cursor-default disabled:active:scale-100 ${
+      className={`relative rounded-2xl border px-4 py-3 pr-11 text-left text-[15px] font-medium leading-snug text-white backdrop-blur transition active:scale-[0.98] disabled:cursor-default disabled:active:scale-100 ${
         selected
-          ? "border-accent-400 bg-accent-500/25 shadow-lg shadow-accent-500/20"
-          : "border-white/15 bg-white/10 hover:bg-white/15"
+          ? "border-[color:var(--border-focus)] bg-[color:var(--surface-accent-solid)]/45 shadow-lg shadow-[color:var(--surface-accent-solid)]/30"
+          : "border-white/20 bg-white/10 hover:bg-white/20"
       }`}
     >
       {label}

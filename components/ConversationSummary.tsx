@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Session, TranscriptEntry, WhatItem } from "@/lib/summary";
-
-const CORAL = "#E07856";
-const MUTED = "#6B7280";
+import { useLessonChrome } from "@/components/LessonChrome";
 
 type Props = {
   session: Session;
@@ -22,6 +20,12 @@ export default function ConversationSummary({
 }: Props) {
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+  const { setSummary } = useLessonChrome();
+
+  useEffect(() => {
+    setSummary(true);
+    return () => setSummary(false);
+  }, [setSummary]);
 
   function seeMoment(idx: number) {
     setTranscriptOpen(true);
@@ -37,19 +41,13 @@ export default function ConversationSummary({
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
-      <div className="px-6 pb-10 pt-6">
+      <div className="px-5 pb-6 pt-3">
         <HeroPoster
           hero={session.analysis.heroMoment}
           characterName={characterName}
         />
 
-        <div className="mt-10 space-y-7">
-          <CurveSection
-            transcript={session.transcript}
-            summary={session.analysis.curveSummary}
-            characterName={characterName}
-          />
-
+        <div className="mt-7">
           <InsightsSection
             whatWorked={session.analysis.whatWorked}
             worthNoticing={session.analysis.worthNoticing}
@@ -83,245 +81,19 @@ function HeroPoster({
 }) {
   return (
     <section className="animate-block-in" style={{ animationDelay: "0ms" }}>
-      <p className="text-[10px] uppercase tracking-[0.4em] text-coral">
+      <p className="text-[12px] uppercase tracking-[0.4em] text-coral">
         {characterName}'s takeaway
       </p>
-      <blockquote className="mt-5 font-serif text-[22px] leading-[1.42] text-white">
+      <blockquote className="mt-4 text-[19px] leading-[1.42] text-[color:var(--text-primary)]">
         <span className="text-coral">“</span>
         {hero.quote}
         <span className="text-coral">”</span>
       </blockquote>
-      <div className="mt-6 h-px w-10 bg-coral/40" />
-      <p className="mt-5 font-serif text-[16px] italic leading-[1.55] text-slate-300">
+      <div className="mt-5 h-px w-10 bg-coral/40" />
+      <p className="mt-4 text-[15px] italic leading-[1.55] text-[color:var(--text-secondary)]">
         {hero.lesson}
       </p>
     </section>
-  );
-}
-
-/* ───────── Curve ───────── */
-
-type ChartPoint = {
-  transcriptIndex: number;
-  value: number;
-  userLine: string | null;
-};
-
-function CurveSection({
-  transcript,
-  summary,
-  characterName,
-}: {
-  transcript: TranscriptEntry[];
-  summary: string;
-  characterName: string;
-}) {
-  const points = useMemo<ChartPoint[]>(() => {
-    return transcript
-      .map((t, i) => {
-        if (t.speaker !== "model" || t.interestLevel === undefined) return null;
-        let userLine: string | null = null;
-        for (let j = i - 1; j >= 0; j--) {
-          if (transcript[j].speaker === "user") {
-            userLine = transcript[j].text;
-            break;
-          }
-        }
-        return { transcriptIndex: i, value: t.interestLevel, userLine };
-      })
-      .filter((p): p is ChartPoint => p !== null);
-  }, [transcript]);
-
-  const W = 340;
-  const H = 70;
-  const PAD_X = 6;
-  const PAD_Y = 12;
-  const innerW = W - PAD_X * 2;
-  const innerH = H - PAD_Y * 2;
-
-  const coords = points.map((p, i) => ({
-    x: points.length > 1 ? PAD_X + (i / (points.length - 1)) * innerW : W / 2,
-    y: PAD_Y + (1 - p.value / 100) * innerH,
-  }));
-
-  // Smooth Catmull-Rom interpolation rendered as a series of cubic beziers
-  // so the line glides between data points rather than zig-zagging.
-  function smoothPathD(pts: { x: number; y: number }[]): string {
-    if (pts.length === 0) return "";
-    if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
-    if (pts.length === 2)
-      return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
-    const tension = 0.45;
-    let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] ?? pts[i];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[i + 2] ?? p2;
-      const cp1x = p1.x + ((p2.x - p0.x) * tension) / 2;
-      const cp1y = p1.y + ((p2.y - p0.y) * tension) / 2;
-      const cp2x = p2.x - ((p3.x - p1.x) * tension) / 2;
-      const cp2y = p2.y - ((p3.y - p1.y) * tension) / 2;
-      d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-    }
-    return d;
-  }
-
-  const pathD = smoothPathD(coords);
-
-  const [activeIdx, setActiveIdx] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (activeIdx === null) return;
-      const el = containerRef.current;
-      if (el && !el.contains(e.target as Node)) setActiveIdx(null);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [activeIdx]);
-
-  return (
-    <section
-      ref={containerRef}
-      className="animate-block-in"
-      style={{ animationDelay: "160ms" }}
-    >
-      <p className="font-serif text-[16px] italic leading-[1.55] text-slate-300">
-        {summary}
-      </p>
-
-      <div className="relative mt-3">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          width="100%"
-          height={H}
-          preserveAspectRatio="none"
-          className="block"
-        >
-          <defs>
-            <linearGradient id="curveGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={CORAL} />
-              <stop offset="55%" stopColor="#B98F6F" />
-              <stop offset="100%" stopColor={MUTED} />
-            </linearGradient>
-            <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={CORAL} stopOpacity="0.16" />
-              <stop offset="100%" stopColor={MUTED} stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {coords.length > 1 && (
-            <path
-              d={`${pathD} L ${coords[coords.length - 1].x} ${H - PAD_Y} L ${coords[0].x} ${H - PAD_Y} Z`}
-              fill="url(#curveFill)"
-            />
-          )}
-
-          <path
-            className="curve-line"
-            d={pathD}
-            fill="none"
-            stroke="url(#curveGradient)"
-            strokeWidth="2.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {coords.map((c, i) => {
-            const isPeak = points[i].value >= 55;
-            const color = isPeak ? CORAL : MUTED;
-            const delay = 600 + i * 80;
-            return (
-              <g key={i}>
-                <circle
-                  className="curve-dot"
-                  cx={c.x}
-                  cy={c.y}
-                  r={activeIdx === i ? 5 : 3.25}
-                  fill={color}
-                  stroke="#0a0a14"
-                  strokeWidth="1.5"
-                  style={{
-                    transition: "r 0.15s",
-                    animationDelay: `${delay}ms`,
-                  }}
-                />
-                <circle
-                  cx={c.x}
-                  cy={c.y}
-                  r={16}
-                  fill="transparent"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveIdx((p) => (p === i ? null : i));
-                  }}
-                  style={{ cursor: "pointer" }}
-                />
-              </g>
-            );
-          })}
-        </svg>
-
-        {activeIdx !== null && points[activeIdx] && (
-          <CurveTooltip
-            point={points[activeIdx]}
-            coord={coords[activeIdx]}
-            chartW={W}
-            chartH={H}
-            characterName={characterName}
-          />
-        )}
-
-        <div className="mt-1.5 flex justify-between px-1 text-[9px] uppercase tracking-[0.25em] text-slate-600">
-          <span>start</span>
-          <span>end</span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CurveTooltip({
-  point,
-  coord,
-  chartW,
-  chartH,
-  characterName,
-}: {
-  point: ChartPoint;
-  coord: { x: number; y: number };
-  chartW: number;
-  chartH: number;
-  characterName: string;
-}) {
-  const leftPct = (coord.x / chartW) * 100;
-  const above = coord.y > chartH * 0.45;
-  return (
-    <div
-      className="pointer-events-none absolute z-10 -translate-x-1/2 transition"
-      style={{
-        left: `${Math.max(10, Math.min(90, leftPct))}%`,
-        top: above ? "auto" : "calc(50% + 12px)",
-        bottom: above ? "calc(50% + 12px)" : "auto",
-      }}
-    >
-      <div className="max-w-[240px] rounded-xl border border-white/10 bg-slate-900/95 px-3 py-2 text-[12px] leading-snug text-slate-100 shadow-xl backdrop-blur">
-        {point.userLine ? (
-          <>
-            <span className="mr-1 text-[10px] uppercase tracking-widest text-slate-500">
-              you said
-            </span>
-            <br />“{point.userLine}”
-          </>
-        ) : (
-          <span className="text-slate-300">
-            {characterName} opened the conversation.
-          </span>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -381,17 +153,17 @@ function InsightRow({
   return (
     <button
       onClick={() => onSeeMoment(item.transcriptIndex)}
-      className="group -mx-2 flex w-full items-start gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-white/[0.04]"
+      className="group -mx-2 flex w-full items-start gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-[color:var(--surface-soft)]"
     >
       <span
-        className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold leading-none ${badge}`}
+        className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold leading-none ${badge}`}
       >
         {glyph}
       </span>
-      <p className="flex-1 text-[16px] leading-snug text-slate-200">
+      <p className="flex-1 text-[15px] leading-snug text-[color:var(--text-primary)]">
         {firstSentence(item.comment)}
       </p>
-      <span className="mt-0.5 text-[16px] leading-none text-slate-600 transition group-hover:text-slate-300">
+      <span className="mt-0.5 text-[16px] leading-none text-[color:var(--text-quaternary)] transition group-hover:text-[color:var(--text-secondary)]">
         →
       </span>
     </button>
@@ -417,12 +189,12 @@ function TranscriptSection({
 }) {
   return (
     <section
-      className="mt-9 animate-block-in"
+      className="mt-7 animate-block-in"
       style={{ animationDelay: "440ms" }}
     >
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 text-[13px] font-medium text-slate-400 transition hover:text-slate-200"
+        className="flex items-center gap-2 text-[14px] font-medium text-[color:var(--text-secondary)] transition hover:text-[color:var(--text-primary)]"
       >
         <span>{open ? "Hide" : "Read"} the full conversation</span>
         <svg
@@ -455,21 +227,23 @@ function TranscriptSection({
                 className={`relative pl-4 transition ${
                   isHighlighted
                     ? "before:absolute before:bottom-0 before:left-0 before:top-0 before:w-[2px] before:rounded-full before:bg-coral"
-                    : "before:absolute before:bottom-0 before:left-0 before:top-0 before:w-[2px] before:rounded-full before:bg-white/10"
+                    : "before:absolute before:bottom-0 before:left-0 before:top-0 before:w-[2px] before:rounded-full before:bg-[color:var(--border-subtle)]"
                 }`}
               >
                 <p
-                  className={`text-[10px] uppercase tracking-[0.2em] ${
-                    isUser ? "text-accent-400" : "text-slate-500"
+                  className={`text-[12px] uppercase tracking-[0.2em] ${
+                    isUser
+                      ? "text-[color:var(--text-accent)]"
+                      : "text-[color:var(--text-quaternary)]"
                   }`}
                 >
                   {isUser ? "You" : characterName}
                 </p>
-                <p className="mt-1 text-[16px] leading-relaxed text-slate-100">
+                <p className="mt-1 text-[15px] leading-relaxed text-[color:var(--text-primary)]">
                   {m.text}
                 </p>
                 {annotation && (
-                  <p className="mt-2 text-[14px] italic leading-snug text-coral/90">
+                  <p className="mt-2 text-[14px] italic leading-snug text-coral">
                     <span className="mr-1.5">↳</span>
                     {annotation}
                   </p>
@@ -494,20 +268,24 @@ function Footer({
 }) {
   return (
     <div
-      className="mt-10 space-y-2 animate-block-in"
+      className="mt-8 space-y-2 animate-block-in border-t border-[color:var(--border-subtle)] pt-6"
       style={{ animationDelay: "580ms" }}
     >
       <Link
-        href="/"
-        className="block rounded-full bg-accent-500 px-5 py-3.5 text-center text-[14px] font-semibold text-white shadow-[0_10px_30px_-12px_rgba(139,92,246,0.65)] transition active:scale-[0.98] hover:bg-accent-400"
+        href="/character/mark"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--surface-accent-tonal)] px-5 py-3 text-center text-[14px] font-semibold text-[color:var(--text-accent)] transition active:scale-[0.98] hover:bg-[color:var(--surface-accent-tonal)]/80"
       >
-        Continue to next lesson
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12a9 9 0 1 0 3-6.7" />
+          <polyline points="3 4 3 9 8 9" />
+        </svg>
+        Try a different scenario
       </Link>
       <button
         onClick={onRestart}
-        className="block w-full rounded-full border border-white/10 px-5 py-3 text-center text-[13px] font-medium text-slate-300 transition active:scale-[0.98] hover:bg-white/5 hover:text-white"
+        className="block w-full rounded-2xl border border-[color:var(--border-subtle)] bg-[color:var(--surface-elevated)] px-5 py-3 text-center text-[14px] font-medium text-[color:var(--text-secondary)] transition active:scale-[0.98] hover:bg-[color:var(--surface-soft)] hover:text-[color:var(--text-primary)]"
       >
-        Try this conversation again
+        Replay this conversation
       </button>
     </div>
   );

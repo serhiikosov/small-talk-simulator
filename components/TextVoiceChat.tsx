@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { Character } from "@/lib/characters";
 import { buildLiveSession } from "@/lib/summary";
 import InterestBar from "./InterestBar";
+import { useUIPrefs } from "./UIPrefs";
 import VoiceRecorder from "./VoiceRecorder";
 import ConversationSummary from "./ConversationSummary";
 
@@ -146,12 +146,20 @@ export default function TextVoiceChat({ character }: { character: Character }) {
   const [loadingAudioIdx, setLoadingAudioIdx] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCacheRef = useRef<Map<number, string>>(new Map());
-  // Skip auto-play for history messages that came from the interactive scene.
   const lastAutoPlayed = useRef<number>(
     initialMessages.length > 1 ? initialMessages.length - 1 : -1,
   );
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
+  const { interestVisible } = useUIPrefs();
+
+  useEffect(() => {
+    if (inputMode === "text") {
+      const t = setTimeout(() => textInputRef.current?.focus(), 80);
+      return () => clearTimeout(t);
+    }
+  }, [inputMode]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -194,7 +202,6 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     [character.voice],
   );
 
-  // Auto-play latest model message
   useEffect(() => {
     const lastIdx = messages.length - 1;
     const last = messages[lastIdx];
@@ -204,7 +211,6 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     }
   }, [messages, playMessage]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
@@ -212,10 +218,6 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     };
   }, []);
 
-  // Smooth transition from chat to summary when the conversation ends.
-  // Schedule all stages once when `ended` flips to true. Do NOT include
-  // `endTransition` in deps — its updates would re-run this effect and the
-  // cleanup would cancel the later setTimeouts before they fired.
   useEffect(() => {
     if (!ended) return;
     const start = endReason === "manual" ? 400 : 1600;
@@ -227,6 +229,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       clearTimeout(t2);
       clearTimeout(t3);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ended, endReason]);
 
   function finishConversation() {
@@ -273,27 +276,18 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Chat error");
 
-      // Pre-fetch the TTS so text + audio appear together. Loader stays
-      // visible during this fetch; on cache hit playMessage skips the
-      // network call and plays immediately when useEffect fires.
       try {
         const ttsRes = await fetch("/api/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: data.reply,
-            voice: character.voice,
-          }),
+          body: JSON.stringify({ text: data.reply, voice: character.voice }),
         });
         if (ttsRes.ok) {
           const blob = await ttsRes.blob();
-          audioCacheRef.current.set(
-            modelReplyIdx,
-            URL.createObjectURL(blob),
-          );
+          audioCacheRef.current.set(modelReplyIdx, URL.createObjectURL(blob));
         }
       } catch {
-        // ignore — message still reveals, just without preloaded audio
+        // ignore
       }
 
       const newInterest = Math.max(0, Math.min(100, interest + data.interestDelta));
@@ -321,8 +315,6 @@ export default function TextVoiceChat({ character }: { character: Character }) {
     }
   }
 
-  const turnsLeft = MAX_USER_TURNS - turnsUsed;
-
   function restartConversation() {
     audioRef.current?.pause();
     audioRef.current = null;
@@ -346,52 +338,37 @@ export default function TextVoiceChat({ character }: { character: Character }) {
   const inSummaryFlow =
     endTransition === "reflecting" || endTransition === "summary";
 
-  const headerTitle = inSummaryFlow ? "Summary" : "Conversation";
-
   const header = (
-    <header className="grid grid-cols-[1fr_auto_1fr] items-center px-5 pt-3 pb-2">
-      <div className="justify-self-start">
-        <Link
-          href={`/character/${character.id}?format=text-voice`}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg text-white/90 transition hover:bg-white/15 active:scale-95"
-          aria-label="Back"
-        >
-          ←
-        </Link>
-      </div>
-      <div className="text-center">
-        <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">
-          {headerTitle}
-        </p>
-        <div className="mt-0.5 flex items-center justify-center gap-1.5">
-          <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full ring-1 ring-white/15">
-            <Image
-              src={character.portrait}
-              alt={character.name}
-              fill
-              sizes="20px"
-              className="object-cover"
-            />
-          </div>
-          <span className="text-sm font-medium text-white">
-            {character.name}, {character.age}
-          </span>
+    <header className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-[color:var(--border-subtle)] bg-[color:var(--surface-elevated)] px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-[color:var(--border-subtle)]">
+          <Image
+            src={character.portrait}
+            alt={character.name}
+            fill
+            sizes="40px"
+            className="object-cover"
+          />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold leading-none text-[color:var(--text-primary)]">
+            {character.name}
+          </p>
+          <p className="mt-1 truncate text-[14px] leading-none text-[color:var(--text-tertiary)]">
+            {inSummaryFlow
+              ? "Conversation summary"
+              : character.shortDescription.split("—")[0].trim()}
+          </p>
         </div>
       </div>
-      <div className="justify-self-end">
-        {endTransition === "chat" ? (
-          <button
-            onClick={finishConversation}
-            className="inline-flex h-9 items-center rounded-full border border-rose-400/40 bg-rose-500/10 px-3 text-[12px] font-medium text-rose-200 transition hover:bg-rose-500/20 hover:text-rose-100 active:scale-95"
-            aria-label="Finish conversation"
-            title="Finish conversation"
-          >
-            Finish
-          </button>
-        ) : (
-          <span className="block h-9 w-9" />
-        )}
-      </div>
+      {endTransition === "chat" ? (
+        <button
+          onClick={finishConversation}
+          className="inline-flex h-10 items-center rounded-full bg-[color:var(--surface-soft)] px-4 text-[14px] font-semibold text-[color:var(--text-secondary)] transition hover:bg-[color:var(--surface-accent-tonal)] hover:text-[color:var(--text-accent)] active:scale-95"
+        >
+          Finish
+        </button>
+      ) : null}
     </header>
   );
 
@@ -417,16 +394,16 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         {header}
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 animate-fade-in">
           <div className="flex flex-col items-center gap-4 text-center">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/5">
-              <svg className="h-5 w-5 animate-spin text-coral" viewBox="0 0 24 24" fill="none">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--surface-soft)]">
+              <svg className="h-5 w-5 animate-spin text-[color:var(--text-accent)]" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity=".2" strokeWidth="3" />
                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
               </svg>
             </span>
-            <p className="font-serif text-[18px] italic leading-relaxed text-slate-200">
+            <p className="text-[17px] italic leading-relaxed text-[color:var(--text-primary)]">
               Looking back on this one…
             </p>
-            <p className="text-[13px] text-slate-400">
+            <p className="text-[14px] text-[color:var(--text-tertiary)]">
               Pulling out the moments worth remembering.
             </p>
           </div>
@@ -442,33 +419,16 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       }`}
     >
       {header}
-      <InterestBar value={interest} />
 
-      <div className="flex items-center justify-between gap-3 px-5 pb-3 text-[10px] uppercase tracking-[0.22em] text-slate-500">
-        <span className="truncate">{character.shortDescription}</span>
-        <span className="inline-flex items-center gap-1.5">
-          {Array.from({ length: MAX_USER_TURNS }).map((_, i) => {
-            const filled = i < turnsUsed;
-            const active = i === turnsUsed && !ended;
-            return (
-              <span
-                key={i}
-                className={`block h-1.5 w-1.5 rounded-full transition ${
-                  filled
-                    ? "bg-coral"
-                    : active
-                    ? "bg-white/40"
-                    : "bg-white/10"
-                }`}
-              />
-            );
-          })}
-        </span>
-      </div>
+      {interestVisible && (
+        <div className="flex-shrink-0 px-4 pt-2 pb-1.5">
+          <InterestBar value={interest} />
+        </div>
+      )}
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 space-y-3 overflow-y-auto scrollbar-thin px-5 pb-4"
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto scrollbar-thin px-4 pb-3"
       >
         {messages.map((m, i) => {
           const isUser = m.role === "user";
@@ -480,31 +440,31 @@ export default function TextVoiceChat({ character }: { character: Character }) {
               className={`flex ${isUser ? "justify-end" : "justify-start"} animate-fade-in`}
             >
               {!isUser && (
-                <div className="relative mr-2 mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15">
+                <div className="relative mr-2 mt-0.5 h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 ring-[color:var(--border-subtle)]">
                   <Image
                     src={character.portrait}
                     alt={character.name}
                     fill
-                    sizes="36px"
+                    sizes="32px"
                     className="object-cover"
                   />
                 </div>
               )}
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 text-[16px] leading-relaxed shadow-sm ${
+                className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed ${
                   isUser
-                    ? "rounded-br-md bg-accent-500 text-white"
-                    : "rounded-bl-md bg-white/10 text-slate-100"
+                    ? "rounded-br-md bg-[color:var(--surface-accent-solid)] text-white shadow-[var(--shadow-elev)]"
+                    : "rounded-bl-md border border-[color:var(--border-subtle)] bg-[color:var(--surface-soft)] text-[color:var(--text-primary)]"
                 }`}
               >
                 <div>{m.text}</div>
                 {!isUser && (
                   <button
                     onClick={() => toggleAudio(i, m.text)}
-                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] transition ${
+                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[14px] font-medium transition ${
                       isPlaying
-                        ? "bg-accent-500/30 text-accent-400"
-                        : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                        ? "bg-[color:var(--surface-accent-tonal)] text-[color:var(--text-accent)]"
+                        : "bg-white text-[color:var(--text-secondary)] hover:bg-[color:var(--surface-accent-tonal)] hover:text-[color:var(--text-accent)]"
                     }`}
                   >
                     {isLoadingAudio ? (
@@ -513,7 +473,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
                         <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                       </svg>
                     ) : isPlaying ? (
-                      <span className="flex h-3 items-center gap-[2px] text-accent-400">
+                      <span className="flex h-3 items-center gap-[2px] text-[color:var(--text-accent)]">
                         <span className="voice-bar h-3" />
                         <span className="voice-bar h-3" style={{ animationDelay: "0.15s" }} />
                         <span className="voice-bar h-3" style={{ animationDelay: "0.3s" }} />
@@ -523,7 +483,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
                         <path d="M3 9v6h4l5 5V4L7 9H3Zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z" />
                       </svg>
                     )}
-                    {isPlaying ? "Playing" : isLoadingAudio ? "..." : "Play voice"}
+                    {isPlaying ? "Playing" : isLoadingAudio ? "…" : "Play voice"}
                   </button>
                 )}
               </div>
@@ -532,20 +492,20 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         })}
         {loading && (
           <div className="flex justify-start animate-fade-in">
-            <div className="relative mr-2 mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15">
+            <div className="relative mr-2 mt-0.5 h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 ring-[color:var(--border-subtle)]">
               <Image
                 src={character.portrait}
                 alt={character.name}
                 fill
-                sizes="36px"
+                sizes="32px"
                 className="object-cover"
               />
             </div>
-            <div className="rounded-2xl rounded-bl-md bg-white/10 px-4 py-3">
+            <div className="rounded-2xl rounded-bl-md border border-[color:var(--border-subtle)] bg-[color:var(--surface-soft)] px-4 py-3">
               <span className="inline-flex items-center gap-1">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.3s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.15s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[color:var(--text-tertiary)] [animation-delay:-0.3s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[color:var(--text-tertiary)] [animation-delay:-0.15s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[color:var(--text-tertiary)]" />
               </span>
             </div>
           </div>
@@ -553,7 +513,7 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       </div>
 
       {error && (
-        <div className="mx-5 mb-2 rounded-xl bg-rose-500/15 px-3 py-2 text-[12px] text-rose-200">
+        <div className="mx-4 mb-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[14px] text-rose-700">
           {error}
         </div>
       )}
@@ -561,16 +521,16 @@ export default function TextVoiceChat({ character }: { character: Character }) {
       {!ended && !loading && hints && (
         <div
           key={`hints-${turnsUsed}`}
-          className="relative z-10 space-y-2 px-4 pb-3 animate-fade-in"
+          className="flex-shrink-0 space-y-2 px-4 pb-3 animate-fade-in"
         >
-          <p className="pl-1 text-[11px] uppercase tracking-[0.28em] text-slate-500">
+          <p className="pl-1 text-[12px] font-semibold uppercase tracking-[0.18em] text-[color:var(--text-tertiary)]">
             Try saying
           </p>
           {hints.map((hint, i) => (
             <button
               key={i}
               onClick={() => sendMessage(hint)}
-              className="block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-[15px] leading-snug text-slate-200 transition hover:border-accent-400/60 hover:bg-accent-500/10 active:scale-[0.98]"
+              className="block w-full rounded-2xl border border-[color:var(--border-subtle)] bg-[color:var(--surface-soft)] px-3.5 py-2.5 text-left text-[14px] leading-snug text-[color:var(--text-primary)] transition hover:border-[color:var(--border-focus)] hover:bg-[color:var(--surface-accent-tonal)] active:scale-[0.98]"
             >
               {hint}
             </button>
@@ -578,59 +538,61 @@ export default function TextVoiceChat({ character }: { character: Character }) {
         </div>
       )}
 
-      {inputMode === "voice" ? (
-        <div className="relative bg-slate-950/85 px-4 pb-7 pt-7 backdrop-blur">
-          <div className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-b from-transparent to-slate-950/85" />
-          <div className="flex flex-col items-center gap-3">
-            <VoiceRecorder
-              size="lg"
-              disabled={loading}
-              onTranscribed={(t) => sendMessage(t)}
-            />
-            <p className="text-[12px] tracking-wide text-slate-400">
-              Tap to speak
-            </p>
-          </div>
+      <div
+        className="relative flex-shrink-0 overflow-hidden border-t border-[color:var(--border-subtle)] bg-[color:var(--surface-elevated)] transition-[min-height] duration-300 ease-out"
+        style={{ minHeight: inputMode === "voice" ? 108 : 72 }}
+      >
+        {/* Voice mode */}
+        <div
+          aria-hidden={inputMode !== "voice"}
+          className={`absolute inset-0 px-4 pb-3 pt-3 transition-all duration-300 ease-out ${
+            inputMode === "voice"
+              ? "opacity-100 translate-y-0 scale-100"
+              : "pointer-events-none opacity-0 -translate-y-1 scale-[0.97]"
+          }`}
+        >
           <button
             type="button"
             onClick={() => setInputMode("text")}
-            disabled={loading}
-            className="absolute bottom-6 right-4 inline-flex h-10 items-center gap-1.5 rounded-full border border-white/12 bg-white/5 px-3.5 text-[12px] font-medium text-slate-300 backdrop-blur transition hover:bg-white/10 hover:text-white disabled:opacity-50"
+            disabled={loading || inputMode !== "voice"}
+            className="absolute left-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[color:var(--border-subtle)] bg-[color:var(--surface-soft)] text-[color:var(--text-secondary)] transition hover:border-[color:var(--border-focus)] hover:bg-[color:var(--surface-accent-tonal)] hover:text-[color:var(--text-accent)] active:scale-95 disabled:opacity-50"
             aria-label="Type instead"
+            title="Type instead"
           >
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2Zm0 12H4V7h16v10Zm-7-2h-2v-2h2v2Zm0-3h-2v-2h2v2Zm-3 3H8v-2h2v2Zm-3 0H5v-2h2v2Zm9 0h-2v-2h2v2Zm3 0h-2v-2h2v2Zm0-3h-2v-2h2v2Zm-3 0h-2v-2h2v2Zm-6-3H5V8h2v2Zm3 0H8V8h2v2Zm3 0h-2V8h2v2Zm3 0h-2V8h2v2Zm3 0h-2V8h2v2Z" />
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="6" width="18" height="12" rx="2.5" />
+              <path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10" />
             </svg>
-            Type
           </button>
+          <div className="flex flex-col items-center gap-1.5">
+            <VoiceRecorder
+              size="sm"
+              disabled={loading || inputMode !== "voice"}
+              onTranscribed={(t) => sendMessage(t)}
+            />
+            <p className="text-[13px] font-medium text-[color:var(--text-tertiary)]">
+              Tap to speak
+            </p>
+          </div>
         </div>
-      ) : (
+
+        {/* Text mode */}
         <form
-          className="relative bg-slate-950/85 px-4 pb-4 pt-3 backdrop-blur"
+          aria-hidden={inputMode !== "text"}
+          className={`absolute inset-0 flex items-center px-3 transition-all duration-300 ease-out ${
+            inputMode === "text"
+              ? "opacity-100 translate-y-0 scale-100"
+              : "pointer-events-none opacity-0 translate-y-1 scale-[0.97]"
+          }`}
           onSubmit={(e) => {
             e.preventDefault();
             sendMessage(input);
           }}
         >
-          <div className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-b from-transparent to-slate-950/85" />
-          <button
-            type="button"
-            onClick={() => {
-              setInput("");
-              setInputMode("voice");
-            }}
-            disabled={loading}
-            className="mb-2 inline-flex h-8 items-center gap-1.5 rounded-full border border-white/12 bg-white/5 px-3 text-[12px] font-medium text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
-            aria-label="Back to voice"
-          >
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
-            </svg>
-            Voice
-          </button>
-          <div className="flex items-end gap-3">
-            <div className="flex-1 rounded-3xl border border-white/10 bg-white/5 focus-within:border-accent-400 focus-within:bg-white/8">
+          <div className="flex w-full items-end gap-2">
+            <div className="flex-1 rounded-2xl border border-[color:var(--border-subtle)] bg-[color:var(--surface-soft)] transition focus-within:border-[color:var(--border-focus)] focus-within:bg-white focus-within:shadow-[var(--shadow-field-focus)]">
               <textarea
+                ref={textInputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -639,26 +601,53 @@ export default function TextVoiceChat({ character }: { character: Character }) {
                     sendMessage(input);
                   }
                 }}
-                disabled={loading}
-                autoFocus
+                disabled={loading || inputMode !== "text"}
                 placeholder="What do you say?"
                 rows={1}
-                className="block max-h-32 w-full resize-none bg-transparent px-4 py-4 text-[16px] text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+                className="block max-h-32 w-full resize-none bg-transparent px-3.5 py-2.5 text-[15px] text-[color:var(--text-primary)] placeholder:text-[color:var(--text-tertiary)] focus:outline-none disabled:opacity-50"
               />
             </div>
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent-500 text-white shadow-[0_10px_30px_-10px_rgba(139,92,246,0.7)] transition active:scale-95 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none"
-              title="Send"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 11.5 21 3l-8.5 18-2-7.5L3 11.5Z" />
-              </svg>
-            </button>
+            <div className="relative h-11 w-11 shrink-0">
+              {/* Send (visible when input has text) */}
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className={`absolute inset-0 inline-flex items-center justify-center rounded-full bg-[color:var(--surface-accent-solid)] text-white shadow-[var(--shadow-action)] transition-all duration-200 ease-out active:scale-95 disabled:cursor-not-allowed ${
+                  input.trim()
+                    ? "opacity-100 scale-100"
+                    : "pointer-events-none opacity-0 scale-90"
+                }`}
+                title="Send"
+                aria-label="Send"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 11.5 21 3l-8.5 18-2-7.5L3 11.5Z" />
+                </svg>
+              </button>
+              {/* Mic (visible when input empty — toggles back to voice) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setInput("");
+                  setInputMode("voice");
+                }}
+                disabled={loading || inputMode !== "text"}
+                className={`absolute inset-0 inline-flex items-center justify-center rounded-full bg-[color:var(--surface-accent-solid)] text-white shadow-[var(--shadow-action)] transition-all duration-200 ease-out active:scale-95 ${
+                  !input.trim()
+                    ? "opacity-100 scale-100"
+                    : "pointer-events-none opacity-0 scale-90"
+                }`}
+                title="Switch to voice"
+                aria-label="Switch to voice"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </form>
-      )}
+      </div>
     </div>
   );
 }

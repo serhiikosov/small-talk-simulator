@@ -1,22 +1,23 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Lora } from "next/font/google";
+import { Inter } from "next/font/google";
+import { LessonChrome } from "@/components/LessonChrome";
+import { UIPrefsProvider, DevToggles } from "@/components/UIPrefs";
 
-const lora = Lora({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-lora",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Small Talk Simulator",
-  description: "Small talk simulator powered by Gemini",
+  title: "RiseGuide — Small Talk Simulator",
+  description: "In-lesson small talk practice",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#08070f",
+  themeColor: "#ECE7F5",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -24,49 +25,99 @@ export const viewport: Viewport = {
 
 function StatusBar() {
   return (
-    <div className="flex shrink-0 items-center justify-between px-7 pt-3 pb-1 text-[12px] font-semibold tracking-tight">
-      <span>9:41</span>
-      <span className="flex items-center gap-1.5 text-slate-200">
-        <svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor" aria-hidden>
-          <rect x="0" y="6" width="2.5" height="4" rx="0.5" />
-          <rect x="4" y="4" width="2.5" height="6" rx="0.5" />
-          <rect x="8" y="2" width="2.5" height="8" rx="0.5" />
-          <rect x="12" y="0" width="2.5" height="10" rx="0.5" />
+    <div className="rg-statusbar">
+      <div className="rg-statusbar-left">
+        <span className="opacity-60">◁</span> TestFlight
+      </div>
+      <div className="rg-statusbar-right">
+        <svg width="18" height="11" viewBox="0 0 18 11" fill="none" aria-hidden>
+          <rect x="0.5" y="6.5" width="3" height="4" rx="0.7" fill="#0A0A12" />
+          <rect x="5" y="4" width="3" height="7" rx="0.7" fill="#0A0A12" />
+          <rect x="9.5" y="1.5" width="3" height="9" rx="0.7" fill="#0A0A12" opacity="0.35" />
+          <rect x="14" y="-1" width="3" height="12" rx="0.7" fill="#0A0A12" opacity="0.35" />
         </svg>
-        <svg width="14" height="10" viewBox="0 0 14 10" fill="none" aria-hidden>
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="none" aria-hidden>
           <path
-            d="M7 9C9.5 5.5 11.5 4 14 4L7 9L0 4C2.5 4 4.5 5.5 7 9Z"
-            fill="currentColor"
-            opacity=".9"
+            d="M8 2C11.3 2 14.3 3.2 16 5L14.3 6.7C13 5.3 10.6 4.3 8 4.3 5.4 4.3 3 5.3 1.7 6.7L0 5C1.7 3.2 4.7 2 8 2Z"
+            fill="#0A0A12"
+          />
+          <path
+            d="M8 6C9.7 6 11.2 6.7 12 7.5L10.3 9.2C9.8 8.7 9 8.3 8 8.3 7 8.3 6.2 8.7 5.7 9.2L4 7.5C4.8 6.7 6.3 6 8 6Z"
+            fill="#0A0A12"
           />
         </svg>
-        <span className="ml-0.5 inline-flex items-center">
-          <span className="relative inline-block h-[10px] w-[22px] rounded-[3px] border border-current/70">
-            <span className="absolute inset-[1.5px] rounded-[1.5px] bg-current" />
-          </span>
-          <span className="ml-[1px] inline-block h-[5px] w-[1.5px] rounded-r-sm bg-current/70" />
-        </span>
-      </span>
+        <svg width="26" height="12" viewBox="0 0 26 12" fill="none" aria-hidden>
+          <rect x="0.5" y="0.5" width="22" height="11" rx="3" stroke="#0A0A12" opacity="0.45" />
+          <rect x="2" y="2" width="19" height="8" rx="1.5" fill="#0A0A12" />
+          <rect x="23.5" y="4" width="2" height="4" rx="0.8" fill="#0A0A12" opacity="0.45" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function LessonNav() {
+  return (
+    <div className="rg-nav">
+      <button className="rg-icon-btn" aria-label="Back">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+      <div className="rg-toggle-pill">
+        <div className="rg-seg active">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="18" x2="20" y2="18" />
+          </svg>
+          Read
+        </div>
+        <div className="rg-seg">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 0118 0v5a2 2 0 01-2 2h-1v-7h3" />
+            <path d="M3 12v5a2 2 0 002 2h1v-7H3" />
+          </svg>
+          Listen
+        </div>
+      </div>
+      <button className="rg-icon-btn" aria-label="More">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="19" cy="12" r="1.8" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function LessonProgress() {
+  return (
+    <div className="rg-progress" aria-hidden>
+      <i /><i /><i /><i /><i />
     </div>
   );
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={lora.variable}>
-      <body className="phone-glow text-slate-100">
-        <div className="flex min-h-[100dvh] items-stretch justify-center sm:items-center sm:p-6">
-          <div className="relative flex w-full max-w-[440px] flex-col overflow-hidden bg-gradient-to-b from-slate-950 via-indigo-950/30 to-slate-950 min-h-[100dvh] sm:min-h-0 sm:h-[860px] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[44px] sm:border sm:border-white/10 sm:shadow-[0_30px_120px_-20px_rgba(124,58,237,0.45),0_0_0_1px_rgba(255,255,255,0.03)]">
-            <StatusBar />
-            <main className="relative flex flex-1 flex-col overflow-hidden">
-              {children}
-            </main>
-            {/* Home indicator (decorative) */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-1.5 z-50 flex justify-center">
-              <span className="hidden sm:block h-1 w-28 rounded-full bg-white/40" />
+    <html lang="en" className={inter.variable}>
+      <body className="rg-body">
+        <UIPrefsProvider>
+          <div className="rg-page">
+            <DevToggles />
+            <div className="rg-phone">
+              <div className="rg-island" aria-hidden />
+              <StatusBar />
+              <LessonNav />
+              <LessonProgress />
+              <main className="rg-main">
+                <LessonChrome>{children}</LessonChrome>
+              </main>
             </div>
           </div>
-        </div>
+        </UIPrefsProvider>
       </body>
     </html>
   );

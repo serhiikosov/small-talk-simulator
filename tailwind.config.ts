@@ -17,7 +17,7 @@ const config: Config = {
         muted: "#6B7280",
       },
       fontFamily: {
-        serif: ["var(--font-lora)", "Georgia", "ui-serif", "serif"],
+        sans: ["var(--font-inter)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
       },
       animation: {
         "fade-in": "fadeIn 0.4s ease-out",

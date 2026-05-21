@@ -2,46 +2,329 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- RiseGuide design tokens ---------- */
+:root {
+  --surface-bg: #EAEBF5;
+  --surface-elevated: #FFFFFF;
+  --surface-soft: #F4F5FA;
+  --surface-accent-tonal: #EAE4FB;
+  --surface-accent-solid: #6C5CE7;
+  --surface-success-tonal: #D4F3DC;
+  --surface-success-solid: #1F8A3A;
+
+  --text-primary: #0A0A12;
+  --text-secondary: #4A4856;
+  --text-tertiary: #525060;
+  --text-quaternary: #6B6976;
+  --text-on-accent: #FFFFFF;
+  --text-accent: #4F3DD9;
+  --text-success: #1A7833;
+
+  --border-subtle: #E2DEEC;
+  --border-focus: #6C5CE7;
+
+  --cta-bg: #0A0A12;
+  --cta-text: #FFFFFF;
+
+  --radius-field: 18px;
+  --radius-card: 20px;
+  --radius-cta: 999px;
+  --radius-action: 14px;
+
+  --shadow-elev: 0 1px 2px rgba(10, 10, 18, 0.04), 0 8px 20px rgba(76, 60, 180, 0.06);
+  --shadow-card: 0 2px 6px rgba(10, 10, 18, 0.04), 0 16px 40px rgba(76, 60, 180, 0.08);
+  --shadow-field-focus: 0 0 0 4px rgba(108, 92, 231, 0.14);
+  --shadow-action: 0 4px 12px rgba(108, 92, 231, 0.28);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 html,
 body {
   height: 100%;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter",
-    ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  color: var(--text-primary);
+  font-feature-settings: "cv11", "ss01";
+  letter-spacing: -0.005em;
 }
 
-/* Hide scrollbar but keep functionality */
+/* ---------- RiseGuide phone-mockup chrome ---------- */
+.rg-body {
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #E7DDFB 0%, transparent 55%),
+    radial-gradient(900px 600px at 110% 10%, #F7DCE8 0%, transparent 50%),
+    #ECE7F5;
+  min-height: 100vh;
+}
+
+.rg-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.rg-phone {
+  width: 430px;
+  height: 880px;
+  background: var(--surface-bg);
+  border-radius: 56px;
+  box-shadow:
+    0 0 0 10px #0A0A12,
+    0 0 0 11px #2A2838,
+    0 40px 80px rgba(30, 20, 80, 0.18),
+    0 10px 30px rgba(30, 20, 80, 0.10);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+}
+
+.rg-phone::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 320px;
+  background: linear-gradient(180deg, #DDD6F5 0%, #E5DFF3 18%, rgba(234, 235, 245, 0) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rg-island {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 34px;
+  background: #0A0A12;
+  border-radius: 999px;
+  z-index: 5;
+}
+
+.rg-statusbar {
+  position: relative;
+  padding: 18px 28px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 10;
+  min-height: 54px;
+  color: var(--text-primary);
+}
+.rg-statusbar-left,
+.rg-statusbar-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.rg-nav {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  padding: 10px 16px 8px;
+  position: relative;
+  z-index: 2;
+}
+.rg-icon-btn {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 180ms var(--ease-out);
+}
+.rg-icon-btn:active {
+  background: rgba(10, 10, 18, 0.06);
+}
+.rg-toggle-pill {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  background: var(--surface-elevated);
+  padding: 4px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-elev);
+  font-size: 14px;
+  font-weight: 500;
+}
+.rg-seg {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+.rg-seg.active {
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+.rg-progress {
+  display: flex;
+  gap: 6px;
+  padding: 14px 24px 14px;
+  position: relative;
+  z-index: 2;
+}
+.rg-progress i {
+  flex: 1;
+  height: 2px;
+  background: var(--surface-accent-solid);
+  border-radius: 2px;
+  opacity: 0.95;
+  display: block;
+}
+
+/* ---------- Main lesson content area ---------- */
+.rg-main {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 12px 16px 18px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---------- Lesson header (above the tool card) ---------- */
+.rg-lesson-header {
+  flex-shrink: 0;
+  padding: 6px 6px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.rg-lesson-header .rg-section-title {
+  margin-top: 0;
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ---------- Tool card (white surface holding the tool flow) ---------- */
+.rg-tool-card {
+  flex: 1 1 0;
+  min-height: 0;
+  background: var(--surface-elevated);
+  border-radius: 24px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ---------- Lesson-level CTA below the tool card ---------- */
+.rg-lesson-cta {
+  flex-shrink: 0;
+  padding: 12px 4px 4px;
+}
+
+/* ---------- Lesson typography scale ---------- */
+.rg-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-accent);
+  background: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow:
+    0 1px 2px rgba(76, 60, 180, 0.08),
+    0 6px 16px rgba(76, 60, 180, 0.10),
+    inset 0 0 0 1px rgba(108, 92, 231, 0.14);
+}
+.rg-section-title {
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  margin-top: 12px;
+}
+.rg-section-sub {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+.rg-block-title {
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+.rg-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.rg-body {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+.rg-body-sm {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* ---------- Hide scrollbar but keep functionality (legacy class kept for existing components) ---------- */
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 18, 0.12);
   border-radius: 4px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* Phone shell glow */
-.phone-glow {
-  background:
-    radial-gradient(ellipse at 20% 0%, rgba(167, 139, 250, 0.25), transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(56, 189, 248, 0.18), transparent 55%),
-    linear-gradient(180deg, #0c0a1a 0%, #07060f 100%);
-}
-
+/* ---------- Animations carried over ---------- */
 @keyframes voicePulse {
   0%, 100% { transform: scaleY(0.35); }
-  50% { transform: scaleY(1); }
+  50%      { transform: scaleY(1); }
 }
-
 .voice-bar {
   width: 3px;
   border-radius: 9999px;
@@ -50,10 +333,9 @@ body {
   animation: voicePulse 0.9s ease-in-out infinite;
 }
 
-/* Draw the interest curve line on summary screen */
 @keyframes drawCurve {
   from { stroke-dashoffset: 600; }
-  to { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: 0; }
 }
 .curve-line {
   stroke-dasharray: 600;
@@ -62,7 +344,7 @@ body {
 }
 @keyframes curveDotIn {
   from { opacity: 0; transform: scale(0.4); }
-  to { opacity: 1; transform: scale(1); }
+  to   { opacity: 1; transform: scale(1); }
 }
 .curve-dot {
   transform-origin: center;
@@ -70,4 +352,3 @@ body {
   opacity: 0;
   animation: curveDotIn 0.35s ease-out forwards;
 }
-
