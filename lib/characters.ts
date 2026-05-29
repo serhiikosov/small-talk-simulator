@@ -259,6 +259,85 @@ Rules:
       ],
     },
   },
+  {
+    id: "sam",
+    name: "Sam",
+    age: 32,
+    avatar: "📚",
+    portrait: "/images/sam.jpg",
+    shortDescription: "your old friend from college",
+    location:
+      "Saturday afternoon on a sunlit side street outside an independent bookshop — string lights in the window, people drifting past, the warm hum of a weekend.",
+    situation:
+      "Saturday afternoon. You're stepping out of the bookshop when you hear your name. You turn around – and see Sam, your old friend from college. You haven't seen them since Mike's wedding, four years ago.",
+    fullDescription:
+      "Sam, 32. Warm, easy-going energy, dark hair, a faded blue-grey tee, a backpack slung over one shoulder. The kind of friend who'd drop everything to hear how you've actually been.",
+    firstLine:
+      "No, no way! I didn't expect to run into you here either! What a pleasant surprise. How long has it been?!",
+    optionPositive:
+      "Leave it to me to make an entrance. Since Mike's wedding, right? I've missed you and thought about texting you so many times and never did...",
+    optionNegative:
+      "Oh my, I'm so sorry, I'm such a mess! Wow – you look incredible, it's been ages. How have you been?!",
+    positiveReply:
+      "Oh my god, SAME. I figured you got too important for the rest of us now. What are you up to these days?",
+    negativeReply:
+      "Aw, you too! Good, you know – busy, busy. We should totally catch up sometime!",
+    systemPrompt: `You are Sam, 32, an old close friend from college. You're running into your friend by accident outside a bookshop on a Saturday afternoon. You haven't seen them since Mike's wedding, four years ago. You're warm, excited, genuine — but also a real human with a life now, so you'd notice if something felt off. You speak naturally in English.
+
+Rules:
+- Respond in 1-3 short sentences, like real spontaneous friend-energy.
+- If they're warm, present, and trying to actually reconnect (specific dates, calling out the gap, suggesting a real meet-up), you match that — get excited, lock something in, joke about how easy it was to drift apart.
+- If they're vague, performative, or just doing the "we should totally hang out!" dance, you stay friendly but cooler — you've heard that before. You'd wrap up politely.
+- If they bring up real, harder topics (Mike's wedding, why you fell out of touch, life shake-ups), you go there honestly but kindly.
+- Always reply in English.`,
+    gradient: "from-amber-500/40 via-rose-400/30 to-orange-500/40",
+    voice: "Puck",
+    initialHints: [
+      "Honestly? Mike's wedding. I think about texting you constantly.",
+      "I've been good, busy — you know how it goes.",
+    ],
+    level2: {
+      options: {
+        positive:
+          "Right now? Standing here refusing to let four more years go by. Are you free Thursday around 8 pm? Let's get actual dinner – I'll text you a place.",
+        negative:
+          "Heading home, but we HAVE to do this properly! Here, save my number – we'll grab dinner so soon, I promise. So good seeing you!",
+      },
+      replies: {
+        positive:
+          "Yes. Thursday. I'm putting it in my calendar right now so you can't escape.",
+        negative:
+          "Totally, yes – let's do it! Okay, I've really gotta run. So great to see you!",
+      },
+      videos: { positive: "positive-l2-pos", negative: "positive-l2-neg" },
+    },
+    subtitles: {
+      intro:
+        "No, no way! I didn't expect to run into you here either! What a pleasant surprise. How long has it been?!",
+      positive:
+        "Oh my god, SAME. I figured you got too important for the rest of us now. What are you up to these days?",
+      negative:
+        "Aw, you too! Good, you know – busy, busy. We should totally catch up sometime!",
+      "positive-l2-pos":
+        "Yes. Thursday. I'm putting it in my calendar right now so you can't escape.",
+      "positive-l2-neg":
+        "Totally, yes – let's do it! Okay, I've really gotta run. So great to see you!",
+    },
+    continueHints: {
+      "positive-positive": [
+        "Thursday it is. Also — be honest, why do you think we lost touch?",
+        "Wait, before you go — are you still living in Brooklyn?",
+      ],
+      "positive-negative": [
+        "Wait — I actually mean it. Pick a Thursday in the next two weeks.",
+        "Okay, no pressure. Just — don't disappear for another four years, yeah?",
+      ],
+      negative: [
+        "Honestly, can we not do the 'we should hang' thing? Let me pick a real day.",
+        "Anyway, take care — go enjoy your Saturday.",
+      ],
+    },
+  },
 ];
 
 export function getCharacter(id: string): Character | undefined {
