@@ -46,15 +46,17 @@ function buildInitialMessages(
       interestLevel: 65,
     });
     if (b2 && character.level2) {
-      msgs.push({
-        role: "model",
-        text: lindaLine(
-          character,
-          character.level2.connectorVideo,
-          "Do you have anything like that?",
-        ),
-        interestLevel: 65,
-      });
+      if (character.level2.connectorVideo) {
+        msgs.push({
+          role: "model",
+          text: lindaLine(
+            character,
+            character.level2.connectorVideo,
+            "Do you have anything like that?",
+          ),
+          interestLevel: 65,
+        });
+      }
       msgs.push({ role: "user", text: character.level2.options[b2] });
       msgs.push({
         role: "model",
