@@ -9,16 +9,7 @@ import { getCharacter } from "@/lib/characters";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { viewMode } = useUIPrefs();
-  if (viewMode === "fullscreen") {
-    return (
-      <div className="fs-page">
-        <DevToggles />
-        <PhaseScrubber />
-        <FullscreenTopBar />
-        <main className="fs-main">{children}</main>
-      </div>
-    );
-  }
+  const isFs = viewMode === "fullscreen";
   return (
     <div className="rg-page">
       <DevToggles />
@@ -26,11 +17,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="rg-phone">
         <div className="rg-island" aria-hidden />
         <StatusBar />
-        <LessonNav />
-        <LessonProgress />
-        <main className="rg-main">
-          <LessonChrome>{children}</LessonChrome>
-        </main>
+        {isFs ? (
+          <main className="rg-main fs-mode">
+            <FullscreenTopBar />
+            {children}
+          </main>
+        ) : (
+          <>
+            <LessonNav />
+            <LessonProgress />
+            <main className="rg-main">
+              <LessonChrome>{children}</LessonChrome>
+            </main>
+          </>
+        )}
       </div>
     </div>
   );
@@ -52,7 +52,7 @@ function FullscreenTopBar() {
       <div className="fs-topbar-inner">
         {showBack ? (
           <Link href={backHref} className="fs-back" aria-label="Back">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path
                 d="M15 18l-6-6 6-6"
                 stroke="currentColor"
