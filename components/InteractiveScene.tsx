@@ -4,18 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Character } from "@/lib/characters";
 import { useUIPrefs } from "./UIPrefs";
-
-type Phase =
-  | "intro"
-  | "choice-1"
-  | "branch-positive"
-  | "branch-negative"
-  | "positive-followup"
-  | "choice-2"
-  | "branch-l2-positive"
-  | "branch-l2-negative"
-  | "negative-followup"
-  | "end";
+import { useSceneController, type Phase } from "./SceneController";
 
 type LastChoice = { level: 1 | 2; branch: "positive" | "negative" };
 
@@ -82,11 +71,24 @@ function phaseToFallbackText(phase: Phase, c: Character): string {
 }
 
 export default function InteractiveScene({ character }: { character: Character }) {
-  const [phase, setPhase] = useState<Phase>("intro");
+  const { phase, setPhase, setActive, setCharacterId } = useSceneController();
   // Tracks the last video phase whose frame should remain visible behind
   // choice/end overlays. Only updated when entering a video phase, so during
   // `choice-*` / `end` the previous video stays mounted on its final frame.
   const [displayPhase, setDisplayPhase] = useState<Phase>("intro");
+
+  // Register with the external scene controller so out-of-frame controls
+  // (PhaseScrubber) can drive and read the phase.
+  useEffect(() => {
+    setActive(true);
+    setCharacterId(character.id);
+    setPhase("intro");
+    return () => {
+      setActive(false);
+      setCharacterId(null);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character.id]);
   const [videoFailed, setVideoFailed] = useState(false);
   const [muted, setMuted] = useState(false);
   const [needsTap, setNeedsTap] = useState(false);
@@ -105,7 +107,15 @@ export default function InteractiveScene({ character }: { character: Character }
   }, []);
 
   useEffect(() => {
-    if (isVideoPhase(phase)) setDisplayPhase(phase);
+    if (isVideoPhase(phase)) {
+      setDisplayPhase(phase);
+    } else {
+      // Non-video phase (choice/end). The previous video stays mounted as a
+      // backdrop, but its audio must stop — otherwise rapid scrubber jumps
+      // stack audio tracks from earlier scenes.
+      const v = videoRef.current;
+      if (v && !v.paused) v.pause();
+    }
   }, [phase]);
 
   const displayScene = phaseToScene(displayPhase, character);
@@ -135,6 +145,12 @@ export default function InteractiveScene({ character }: { character: Character }
         v.play().catch(() => {});
       });
     }
+    return () => {
+      // Pause the captured video element when deps change. Defends against
+      // overlapping audio when scrubber jumps between scenes faster than
+      // React unmount finishes releasing the previous element.
+      v.pause();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayScene, phase, videoFailed]);
 
@@ -169,7 +185,11 @@ export default function InteractiveScene({ character }: { character: Character }
   }, [phase, videoFailed]);
 
   function advanceFromBranchPositive() {
-    setPhase(character.level2 ? "positive-followup" : "end");
+    if (!character.level2) {
+      setPhase("end");
+      return;
+    }
+    setPhase(character.level2.connectorVideo ? "positive-followup" : "choice-2");
   }
 
   function advanceFromBranchNegative() {

@@ -18,7 +18,7 @@ export type Character = {
   voice: string;
   initialHints: [string, string];
   level2?: {
-    connectorVideo: string;
+    connectorVideo?: string;
     options: { positive: string; negative: string };
     replies: { positive: string; negative: string };
     videos: { positive: string; negative: string };
@@ -177,6 +177,77 @@ Rules:
       negative: [
         "Sorry, that came out wrong. Welcome aboard — what team are you on?",
         "Suit yourself. Just trying to be friendly.",
+      ],
+    },
+  },
+  {
+    id: "jessica",
+    name: "Jessica",
+    age: 49,
+    avatar: "🛗",
+    portrait: "/images/jessica.png",
+    shortDescription: "VP in the elevator with you",
+    location:
+      "Sleek corporate elevator — brushed steel walls, soft overhead light, glass panel above the doors showing floor numbers.",
+    situation:
+      "Friday morning. You step into the elevator heading up to fourteen. Jessica — a VP you've seen in all-hands but never spoken with — is the only other person inside. The doors close. You have about ninety seconds.",
+    fullDescription:
+      "Jessica, 49. Dark shoulder-length hair, calm hazel eyes, navy tailored suit over a cream silk blouse. Sharp, time-conscious, but warmer than her reputation suggests when someone earns her attention.",
+    firstLine: "Morning. Heading up to fourteen?",
+    optionPositive:
+      "Yeah, fourteen, thanks. I'm in product — I think we were both in Monday's strategy review.",
+    optionNegative: "Yeah.",
+    positiveReply:
+      "Oh, right — product. I thought I recognized you. That session ran long. What was your take on the pricing slide?",
+    negativeReply: "Mm. Have a good one.",
+    systemPrompt: `You are Jessica, 49, a VP at a mid-sized tech company. You're sharp, direct, and protective of your time, but warm with people who bring something substantive. You're in an elevator with someone from a different team — you may have seen them around but haven't worked together. You speak naturally in English.
+
+Rules:
+- Respond in 1-3 short sentences, like real elevator small talk.
+- If the colleague brings a real opinion or a substantive observation, you engage and may offer them a follow-up ("send me a note", "swing by my office").
+- If they're vague, monosyllabic, or trying too hard to impress, you stay polite but clipped and start wrapping up.
+- If the conversation gets inappropriate (gossip, asking about salary, fishing for favors), you redirect firmly and politely.
+- Always reply in English.`,
+    gradient: "from-slate-500/40 via-indigo-500/30 to-blue-600/40",
+    voice: "Charon",
+    initialHints: [
+      "Yeah, fourteen. I'm in product — wanted to ask you about Monday's review.",
+      "Yeah.",
+    ],
+    level2: {
+      options: {
+        positive:
+          "Honestly, I thought it skipped the segmentation question. We don't actually know what the SMB tier wants.",
+        negative: "Looked fine to me. Numbers were clear.",
+      },
+      replies: {
+        positive:
+          "That's exactly what I was thinking. Send me a note today — I want product's view before Tuesday's board prep.",
+        negative: "Hm. Okay.",
+      },
+      videos: { positive: "positive-l2-pos", negative: "positive-l2-neg" },
+    },
+    subtitles: {
+      intro: "Morning. Heading up to fourteen?",
+      positive:
+        "Oh, right — product. I thought I recognized you. That session ran long. What was your take on the pricing slide?",
+      negative: "Mm. Have a good one.",
+      "positive-l2-pos":
+        "That's exactly what I was thinking. Send me a note today — I want product's view before Tuesday's board prep.",
+      "positive-l2-neg": "Hm. Okay.",
+    },
+    continueHints: {
+      "positive-positive": [
+        "Will do. Mind if I loop in our research lead on the note?",
+        "Honestly, while I have you — any chance you'd back a small SMB pilot?",
+      ],
+      "positive-negative": [
+        "Sorry — let me rephrase. The dollar figure was clear, but the customer story behind it wasn't.",
+        "Yeah, you're right, I was overthinking it.",
+      ],
+      negative: [
+        "Sorry — that was a weird answer. I did want to say I liked your framing on Monday.",
+        "Anyway, have a good weekend.",
       ],
     },
   },

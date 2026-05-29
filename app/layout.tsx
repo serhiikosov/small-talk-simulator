@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { LessonChrome } from "@/components/LessonChrome";
 import { UIPrefsProvider, DevToggles } from "@/components/UIPrefs";
+import { SceneControllerProvider } from "@/components/SceneController";
+import { PhaseScrubber } from "@/components/PhaseScrubber";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -105,8 +107,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={inter.variable}>
       <body className="rg-body">
         <UIPrefsProvider>
+          <SceneControllerProvider>
           <div className="rg-page">
             <DevToggles />
+            <PhaseScrubber />
             <div className="rg-phone">
               <div className="rg-island" aria-hidden />
               <StatusBar />
@@ -117,6 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </main>
             </div>
           </div>
+          </SceneControllerProvider>
         </UIPrefsProvider>
       </body>
     </html>
