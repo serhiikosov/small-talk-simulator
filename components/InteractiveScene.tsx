@@ -96,7 +96,8 @@ export default function InteractiveScene({ character }: { character: Character }
   const [captionsOn, setCaptionsOn] = useState(true);
   const [lastChoice, setLastChoice] = useState<LastChoice | null>(null);
   const [pendingChoice, setPendingChoice] = useState<"positive" | "negative" | null>(null);
-  const { chatEnabled } = useUIPrefs();
+  const { chatEnabled, viewMode } = useUIPrefs();
+  const isFs = viewMode === "fullscreen";
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -315,7 +316,7 @@ export default function InteractiveScene({ character }: { character: Character }
           <button
             type="button"
             onClick={() => setCaptionsOn((v) => !v)}
-            className={`absolute top-3 right-14 z-20 inline-flex h-9 items-center gap-1 rounded-full bg-black/60 px-2.5 text-[14px] font-bold text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
+            className={`absolute ${isFs ? "top-4 right-16" : "top-3 right-14"} z-40 inline-flex h-9 items-center gap-1 rounded-full bg-black/60 px-2.5 text-[14px] font-bold text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
               captionsOn ? "" : "opacity-50"
             }`}
             aria-label={captionsOn ? "Hide captions" : "Show captions"}
@@ -328,7 +329,7 @@ export default function InteractiveScene({ character }: { character: Character }
           <button
             type="button"
             onClick={toggleMute}
-            className={`absolute top-3 right-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
+            className={`absolute ${isFs ? "top-4 right-4" : "top-3 right-3"} z-40 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-black/80 active:scale-95 ${
               needsTap ? "ring-2 ring-white/70 animate-pulse" : ""
             }`}
             aria-label={muted ? "Unmute" : "Mute"}
@@ -403,7 +404,13 @@ export default function InteractiveScene({ character }: { character: Character }
 
         {/* End-of-branch overlay */}
         {phase === "end" && (
-          <div className="absolute inset-0 z-30 flex flex-col justify-end overflow-y-auto bg-gradient-to-t from-black/95 via-black/80 to-black/30 p-6 pb-5 backdrop-blur-[3px] animate-fade-in">
+          <div
+            className={
+              isFs
+                ? "absolute inset-x-3 bottom-4 top-auto z-30 flex flex-col overflow-y-auto rounded-[28px] bg-black/60 p-5 backdrop-blur-2xl animate-fade-in shadow-[0_24px_60px_-16px_rgba(0,0,0,0.55)] border border-white/10 max-w-[560px] mx-auto"
+                : "absolute inset-0 z-30 flex flex-col justify-end overflow-y-auto bg-gradient-to-t from-black/95 via-black/80 to-black/30 p-6 pb-5 backdrop-blur-[3px] animate-fade-in"
+            }
+          >
             <div className="w-full animate-slide-up">
               <p className="text-[12px] uppercase tracking-[0.32em] text-coral">
                 Scene complete
