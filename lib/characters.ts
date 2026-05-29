@@ -230,13 +230,16 @@ Rules:
       videos: { positive: "positive-l2-pos", negative: "positive-l2-neg" },
     },
     subtitles: {
-      intro: "Morning. Heading up to fourteen?",
+      intro:
+        "Hey — you're on the team that shipped the accessibility redesign, right? I saw the launch numbers come through.",
       positive:
-        "Oh, right — product. I thought I recognized you. That session ran long. What was your take on the pricing slide?",
-      negative: "Mm. Have a good one.",
+        "Yeah? Tell me more. What's the number that caught everyone off guard?",
+      negative:
+        "Got it. Well — pass along my congrats to the team.",
       "positive-l2-pos":
-        "That's exactly what I was thinking. Send me a note today — I want product's view before Tuesday's board prep.",
-      "positive-l2-neg": "Hm. Okay.",
+        "Yes — send it tonight. I want to dig into this properly on Monday.",
+      "positive-l2-neg":
+        "Hm. Okay. When you've got a cleaner story, ping me.",
     },
     continueHints: {
       "positive-positive": [
