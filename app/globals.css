@@ -68,12 +68,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px 16px;
+  padding: 20px 16px;
 }
 
 .rg-phone {
-  width: 430px;
-  height: 880px;
+  aspect-ratio: 430 / 880;
+  height: min(880px, calc(100dvh - 60px));
+  max-width: 430px;
   background: var(--surface-bg);
   border-radius: 56px;
   box-shadow:
