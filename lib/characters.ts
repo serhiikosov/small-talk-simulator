@@ -195,8 +195,9 @@ Rules:
       "Jessica, 49. Dark shoulder-length hair, calm hazel eyes, navy tailored suit over a cream silk blouse. Sharp, time-conscious, but warmer than her reputation suggests when someone earns her attention.",
     firstLine: "Morning. Heading up to fourteen?",
     optionPositive:
-      "Yeah, fourteen, thanks. I'm in product — I think we were both in Monday's strategy review.",
-    optionNegative: "Yeah.",
+      "That's me, the accessibility redesign. It's been a ride, honestly. We just hit a number nobody saw coming. I'd love your read on it.",
+    optionNegative:
+      "Oh wow, thank you! Yeah, that's me – honestly it's been such a team effort, though. Everyone's put in so much work.",
     positiveReply:
       "Oh, right — product. I thought I recognized you. That session ran long. What was your take on the pricing slide?",
     negativeReply: "Mm. Have a good one.",
@@ -217,8 +218,9 @@ Rules:
     level2: {
       options: {
         positive:
-          "Honestly, I thought it skipped the segmentation question. We don't actually know what the SMB tier wants.",
-        negative: "Looked fine to me. Numbers were clear.",
+          "Activation jumped forty percent in week one. And honestly, we don't fully know why yet. That's the fun part. Can I send you the breakdown?",
+        negative:
+          "Oh, it's complicated – a few things are moving: activation, retention, churn. We are not sure yet. I'd need more time to explain properly.",
       },
       replies: {
         positive:
