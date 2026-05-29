@@ -10,12 +10,10 @@ type Ctx = {
 
 const LessonChromeContext = createContext<Ctx | null>(null);
 
+const NOOP_CHROME: Ctx = { isSummary: false, setSummary: () => {} };
+
 export function useLessonChrome() {
-  const ctx = useContext(LessonChromeContext);
-  if (!ctx) {
-    throw new Error("useLessonChrome must be used inside <LessonChrome>");
-  }
-  return ctx;
+  return useContext(LessonChromeContext) ?? NOOP_CHROME;
 }
 
 export function LessonChrome({ children }: { children: React.ReactNode }) {
