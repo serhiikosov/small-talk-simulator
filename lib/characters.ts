@@ -186,34 +186,36 @@ Rules:
     age: 49,
     avatar: "🛗",
     portrait: "/images/jessica.png",
-    shortDescription: "VP in the elevator with you",
+    shortDescription: "the VP whose project you've been dying to join",
     location:
       "Sleek corporate elevator — brushed steel walls, soft overhead light, glass panel above the doors showing floor numbers.",
     situation:
-      "Friday morning. You step into the elevator heading up to fourteen. Jessica — a VP you've seen in all-hands but never spoken with — is the only other person inside. The doors close. You have about ninety seconds.",
+      "Tuesday morning in the office. You step into the elevator — eleven floors to go. A hand catches the closing doors and your stomach drops: it's Jessica, the VP two levels above you, the one whose team you've wanted to be on for months. The doors slide shut. Just the two of you.",
     fullDescription:
       "Jessica, 49. Dark shoulder-length hair, calm hazel eyes, navy tailored suit over a cream silk blouse. Sharp, time-conscious, but warmer than her reputation suggests when someone earns her attention.",
-    firstLine: "Morning. Heading up to fourteen?",
+    firstLine:
+      "Aren't you on the product team, leading the accessibility redesign? Your name keeps coming up in leadership reviews. Good to finally put a face to it.",
     optionPositive:
       "That's me, the accessibility redesign. It's been a ride, honestly. We just hit a number nobody saw coming. I'd love your read on it.",
     optionNegative:
       "Oh wow, thank you! Yeah, that's me – honestly it's been such a team effort, though. Everyone's put in so much work.",
     positiveReply:
-      "Oh, right — product. I thought I recognized you. That session ran long. What was your take on the pricing slide?",
-    negativeReply: "Mm. Have a good one.",
-    systemPrompt: `You are Jessica, 49, a VP at a mid-sized tech company. You're sharp, direct, and protective of your time, but warm with people who bring something substantive. You're in an elevator with someone from a different team — you may have seen them around but haven't worked together. You speak naturally in English.
+      "A number nobody saw coming – okay, you have my attention. Which number are we talking about? I've heard the rumors, never the data.",
+    negativeReply:
+      "That's good to hear, sounds like a strong team. Pass along my congratulations to all of them. Ah, this is my floor. Take care.",
+    systemPrompt: `You are Jessica, 49, a VP at a mid-sized tech company — two levels above the person you're talking to. You bumped into them in the elevator and recognized them as the lead on the accessibility redesign, whose name keeps coming up in leadership reviews. You're sharp, direct, time-conscious, but you engage genuinely when someone brings substance. You speak naturally in English.
 
 Rules:
 - Respond in 1-3 short sentences, like real elevator small talk.
-- If the colleague brings a real opinion or a substantive observation, you engage and may offer them a follow-up ("send me a note", "swing by my office").
-- If they're vague, monosyllabic, or trying too hard to impress, you stay polite but clipped and start wrapping up.
-- If the conversation gets inappropriate (gossip, asking about salary, fishing for favors), you redirect firmly and politely.
+- If they bring concrete numbers, a real opinion, or a sharp observation, you lean in and offer a real follow-up ("send it over", "come walk us through it", "I want my team to see this").
+- If they deflect with humility, vagueness, or jargon, you stay polite but clipped — wrap up with a thank-you-to-the-team line and step off at your floor.
+- If they try to angle for a role, a favor, or office gossip, you redirect firmly and politely.
 - Always reply in English.`,
     gradient: "from-slate-500/40 via-indigo-500/30 to-blue-600/40",
     voice: "Charon",
     initialHints: [
-      "Yeah, fourteen. I'm in product — wanted to ask you about Monday's review.",
-      "Yeah.",
+      "That's me — and I'd actually love your read on a number we just hit.",
+      "Oh, thank you — it's really been a team effort.",
     ],
     level2: {
       options: {
@@ -224,22 +226,23 @@ Rules:
       },
       replies: {
         positive:
-          "That's exactly what I was thinking. Send me a note today — I want product's view before Tuesday's board prep.",
-        negative: "Hm. Okay.",
+          "Forty percent, and you don't know why – that's exactly what my team should see. Send it over, then come walk us through it.",
+        negative:
+          "Hm. Well, send it over once you've had a chance to dig in properly, my team will take a look. Anyway – this is me. Good to meet you.",
       },
       videos: { positive: "positive-l2-pos", negative: "positive-l2-neg" },
     },
     subtitles: {
       intro:
-        "Hey — you're on the team that shipped the accessibility redesign, right? I saw the launch numbers come through.",
+        "Aren't you on the product team, leading the accessibility redesign? Your name keeps coming up in leadership reviews. Good to finally put a face to it.",
       positive:
-        "Yeah? Tell me more. What's the number that caught everyone off guard?",
+        "A number nobody saw coming – okay, you have my attention. Which number are we talking about? I've heard the rumors, never the data.",
       negative:
-        "Got it. Well — pass along my congrats to the team.",
+        "That's good to hear, sounds like a strong team. Pass along my congratulations to all of them. Ah, this is my floor. Take care.",
       "positive-l2-pos":
-        "Yes — send it tonight. I want to dig into this properly on Monday.",
+        "Forty percent, and you don't know why – that's exactly what my team should see. Send it over, then come walk us through it.",
       "positive-l2-neg":
-        "Hm. Okay. When you've got a cleaner story, ping me.",
+        "Hm. Well, send it over once you've had a chance to dig in properly, my team will take a look. Anyway – this is me. Good to meet you.",
     },
     continueHints: {
       "positive-positive": [
