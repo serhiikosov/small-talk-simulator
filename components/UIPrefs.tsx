@@ -28,7 +28,7 @@ const VIEW_MODE_KEY = "sts.viewMode";
 export function UIPrefsProvider({ children }: { children: React.ReactNode }) {
   const [interestVisible, setInterestVisible] = useState(false);
   const [chatEnabled, setChatEnabled] = useState(false);
-  const [viewMode, setViewModeState] = useState<ViewMode>("phone");
+  const [viewMode, setViewModeState] = useState<ViewMode>("fullscreen");
 
   useEffect(() => {
     try {
