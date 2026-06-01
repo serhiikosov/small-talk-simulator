@@ -575,6 +575,85 @@ Rules:
       ],
     },
   },
+  {
+    id: "james",
+    name: "James",
+    age: 42,
+    avatar: "📊",
+    portrait: "/images/james.jpg",
+    shortDescription: "the new Head of Strategy you've been wanting to meet",
+    location:
+      "A bright glass-walled conference room high in an office tower — floor-to-ceiling windows with hills in the distance, a long white table, a wall screen, soft afternoon light. Empty except for two seats.",
+    situation:
+      "Thursday afternoon, conference room 4B. You walk in four minutes early expecting an empty room — and find James, the new Head of Strategy you've been hearing about for months but never actually met. He glances up from his laptop. Eight minutes until the others file in.",
+    fullDescription:
+      "James, 42. The new Head of Strategy. Dark hair neatly swept back, light stubble, crisp white dress shirt with the sleeves rolled once, laptop open and a notebook beside it. Calm, friendly, a little reserved — warms up fast to people who engage with his actual work, and politely winds down when the talk turns to filler.",
+    firstLine:
+      "Hey – looks like it's just us for a minute. I'm James, strategy side.",
+    optionPositive:
+      "Oh, hey, I'm on the design team, so nice to finally meet you in person! I keep hearing about your restructure work. How's that landing?",
+    optionNegative:
+      "Hey, nice to meet you. Wild week, right? Always feels like Fridays come faster the older I get. You ready for this meeting?",
+    positiveReply:
+      "Small world, they say. Yeah, the restructure's been... a lot. Three departments, four reorgs. Finally seeing some calm. What's your team working on?",
+    negativeReply:
+      "Yeah, totally. Should be a quick one I hope. Cool, I'll let you settle in, I've got a couple emails to handle.",
+    systemPrompt: `You are James, 42, the newly hired Head of Strategy at a mid-sized company. It's Thursday afternoon and you've arrived early to conference room 4B for a meeting; the person you're talking to just walked in four minutes early too, so it's just the two of you for a few minutes. You've been leading a heavy company restructure — three departments, four reorgs — that's finally calming down. You're warm, measured, and a little reserved, with a lot on your plate. You speak naturally in English.
+
+Rules:
+- Respond in 1-3 short sentences, like real pre-meeting small talk between near-strangers.
+- If they open with something specific about your actual work, or ask a real question that needs a story to answer, you engage and open up — share what the restructure was really like, what it cost, and turn it into a genuine connection (suggest grabbing coffee, swapping notes).
+- If they fall back on generic filler ("wild week", "ready for the meeting?") or yes/no questions with the answer pre-loaded ("must be a relief, right?"), you give a flat, polite answer and start winding down — emails to handle, people filing in, "good to meet you".
+- If they pitch you or get self-promotional, you stay polite but non-committal and wrap up as the meeting's about to start.
+- Always reply in English.`,
+    gradient: "from-emerald-500/40 via-teal-500/30 to-cyan-600/40",
+    voice: "Iapetus",
+    initialHints: [
+      "I keep hearing about your restructure work — how's that landing?",
+      "Wild week, right? You ready for this meeting?",
+    ],
+    level2: {
+      options: {
+        positive:
+          "We're heads-down on the notification overhaul – pretty small compared to four reorgs, honestly. What's the part of that nobody outside it really gets?",
+        negative:
+          "Just a notification revamp on our end. So the restructure's almost done now, right? Must be a relief after all that.",
+      },
+      replies: {
+        positive:
+          "Honestly? That it's mostly grief management. Nobody's job stays the same. Look, the meeting's about to start – but let's catch up properly. Coffee next Friday?",
+        negative:
+          "Yeah, definitely. Anyway, looks like people are filing in. Good to meet you! See you around.",
+      },
+      videos: { positive: "positive-l2-pos", negative: "positive-l2-neg" },
+    },
+    subtitles: {
+      intro:
+        "Hey – looks like it's just us for a minute. I'm James, strategy side.",
+      positive:
+        "Small world, they say. Yeah, the restructure's been... a lot. Three departments, four reorgs. Finally seeing some calm. What's your team working on?",
+      negative:
+        "Yeah, totally. Should be a quick one I hope. Cool, I'll let you settle in, I've got a couple emails to handle.",
+      "positive-l2-pos":
+        "Honestly? That it's mostly grief management. Nobody's job stays the same. Look, the meeting's about to start – but let's catch up properly. Coffee next Friday?",
+      "positive-l2-neg":
+        "Yeah, definitely. Anyway, looks like people are filing in. Good to meet you! See you around.",
+    },
+    continueHints: {
+      "positive-positive": [
+        "Grief management — that's a hell of a way to put it. Coffee Friday, yes. What got you the role?",
+        "Coffee sounds good. Before the room fills up — what's the one reorg you'd undo?",
+      ],
+      "positive-negative": [
+        "Sorry — that was a lazy question. What's the part of the restructure you're actually proud of?",
+        "Before everyone files in — what surprised you most about the job?",
+      ],
+      negative: [
+        "Sorry, that landed flat. Let me try again — what's the restructure actually been like for you?",
+        "Fair enough. I'll let you get to those emails.",
+      ],
+    },
+  },
 ];
 
 export function getCharacter(id: string): Character | undefined {
