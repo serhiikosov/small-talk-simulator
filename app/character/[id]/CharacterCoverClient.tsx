@@ -92,6 +92,9 @@ function FullscreenCover({ character }: { character: Character }) {
       </div>
       <div className="fs-cover-vignette" />
       <div className="fs-cover-card">
+        <div className="fs-cover-card-blur" aria-hidden>
+          <Image src={character.portrait} alt="" fill sizes="440px" />
+        </div>
         <div className="fs-cover-row">
           <h1 className="fs-cover-name">{character.name}</h1>
           <span className="fs-cover-duration">3 MIN</span>

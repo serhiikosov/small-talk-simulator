@@ -436,6 +436,9 @@ body {
   flex-direction: column;
   justify-content: flex-end;
   padding: 18px 14px 18px;
+  /* Query container so the card's blurred backdrop layer can size itself to
+     the full cover (100cqw/100cqh) and align pixel-for-pixel with the photo. */
+  container-type: size;
 }
 
 .fs-cover-image {
@@ -465,13 +468,44 @@ body {
 .fs-cover-card {
   position: relative;
   z-index: 2;
-  background: rgba(28, 24, 36, 0.62);
+  isolation: isolate;
+  overflow: hidden;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 24px;
   padding: 18px 18px 16px;
-  backdrop-filter: blur(28px) saturate(140%);
-  -webkit-backdrop-filter: blur(28px) saturate(140%);
   box-shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.6);
   width: 100%;
+}
+
+/* Native backdrop-filter is suppressed by the phone mockup's rounded
+   overflow-clip (.rg-phone), so we emulate frosted glass: a blurred copy of
+   the portrait, sized to the full cover via container units and offset by the
+   cover's padding (14px sides / 18px bottom) so its crop matches the sharp
+   photo exactly. The card's overflow:hidden clips it to the card region. */
+.fs-cover-card-blur {
+  position: absolute;
+  left: -14px;
+  bottom: -18px;
+  width: 100cqw;
+  height: 100cqh;
+  z-index: 0;
+  pointer-events: none;
+}
+.fs-cover-card-blur img {
+  object-fit: cover;
+  object-position: center 25%;
+  filter: blur(26px) saturate(130%);
+}
+.fs-cover-card-blur::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 12, 22, 0.48);
+}
+.fs-cover-card > *:not(.fs-cover-card-blur) {
+  position: relative;
+  z-index: 1;
 }
 
 .fs-cover-row {
